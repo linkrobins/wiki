@@ -96,6 +96,22 @@ export default class WikiIndexSidebar extends IndexSidebar {
 
     items.add('linkrobinsWikiSeparator', m(Separator), -10);
 
+    // "Index" -- the full article list. Active when no category is selected
+    // (and on uncategorized articles).
+    items.add(
+      'wiki-index',
+      m(
+        LinkButton,
+        {
+          href: basePath() + BASE_PATH,
+          icon: 'fas fa-list',
+          active: !active,
+        },
+        tr('index.index_label', 'Index')
+      ),
+      -11
+    );
+
     this.categories.forEach((cat: any, i: number) => {
       items.add(
         'wiki-cat-' + cat.id(),
