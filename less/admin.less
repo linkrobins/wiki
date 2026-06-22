@@ -1,7 +1,12 @@
-// The admin page now uses Flarum's standard ExtensionPage + FormSectionGroup /
-// FormSection layout (matching the core Tags extension page), so the old custom
-// tab-bar / section-header styling is gone. Only the table and small helpers
-// below remain.
+.LinkRobinsWikiAdmin {
+    .helpText {
+        margin-bottom: 12px;
+    }
+
+    > .Button {
+        margin-bottom: 16px;
+    }
+}
 
 .LinkRobinsWikiAdmin-empty {
     padding: 24px;
@@ -11,55 +16,7 @@
     border-radius: 8px;
 }
 
-// Core's FormSectionGroup lays its FormSections out side-by-side in a wrapping
-// flex row, capped at max-width 400px each -- great for narrow settings panels
-// (e.g. Tags' tag lists), but our category/banned tables are far wider and would
-// overflow their column and bleed into the neighbouring section. Force the
-// wiki sections to stack vertically and span the full width instead.
-.LinkRobinsWikiAdmin {
-    .FormSectionGroup {
-        display: block;
-    }
-
-    .FormSection {
-        display: grid;
-        max-width: none;
-        min-height: 0;
-        margin-bottom: 20px;
-    }
-
-    // Let wide tables scroll horizontally rather than overflow on narrow / mobile
-    // viewports. FormSection-body is min-width:0 so this clamps correctly.
-    .LinkRobinsWikiAdmin-tableWrap {
-        overflow-x: auto;
-        -webkit-overflow-scrolling: touch;
-    }
-
-    .helpText {
-        margin-bottom: 12px;
-    }
-
-    .LinkRobinsWikiAdmin-tableWrap + .Button,
-    .LinkRobinsWikiAdmin-empty + .Button {
-        margin-top: 16px;
-    }
-
-    h4 {
-        margin: 20px 0 8px;
-    }
-}
-
-// Category editor modal: built on Flarum's FormModal and Form components, so
-// it inherits the exact field/label/helpText spacing of core modals (e.g. the
-// Tags "New Tag" modal) with no overrides. Only the delete button needs a nudge
-// to the right of the submit row, mirroring EditTagModal.
-.LinkRobinsWikiCategoryEditorModal-delete {
-    margin-left: auto;
-}
-
-// --- Categories table -----------------------------------------------
-
-.LinkRobinsWikiAdmin-catTable {
+.LinkRobinsWikiAdmin-table {
     width: 100%;
     border-collapse: collapse;
 
@@ -80,31 +37,14 @@
     tbody tr:hover {
         background: var(--control-bg, rgba(0,0,0,0.02));
     }
-}
 
-.LinkRobinsWikiAdmin-mono {
-    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
-    font-size: 0.85rem;
-    color: var(--muted-color, #888);
-}
-
-.LinkRobinsWikiAdmin-tag {
-    display: inline-block;
-    padding: 2px 10px;
-    border-radius: 999px;
-    font-size: 0.75rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-
-    &.is-appeal {
-        background: rgba(192, 57, 43, 0.12);
-        color: #c0392b;
+    code {
+        font-size: 0.85rem;
+        color: var(--muted-color, #888);
     }
 }
 
-.LinkRobinsWikiAdmin-actions {
+.LinkRobinsWikiAdmin-rowActions {
     text-align: right;
     white-space: nowrap;
 }
-

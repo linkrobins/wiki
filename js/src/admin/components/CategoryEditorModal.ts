@@ -1,285 +1,134 @@
-import FormModal from 'flarum/common/components/FormModal';
-import Form from 'flarum/common/components/Form';
+import Modal from 'flarum/common/components/Modal';
 import Button from 'flarum/common/components/Button';
-import ColorPreviewInput from 'flarum/common/components/ColorPreviewInput';
-import { tx, saveCategory, deleteCategory } from '../utils';
+import { t, tx, saveCategory } from '../utils';
 
 /**
- * Create/edit a wiki category. Built on core's FormModal so it matches the
- * Tags "New Tag" modal (a real <form>, Form-wrapped fields, a Form-controls
- * submit/delete row).
+ * Create / edit a wiki category. A null `category` attr means create; an
+ * existing model means edit.
  */
-export default class CategoryEditorModal extends FormModal {
+export default class CategoryEditorModal extends Modal {
   category: any = null;
-  editId: any = null;
+  saving = false;
+
   name = '';
   slug = '';
   description = '';
-  color = '#07adcc';
-  icon = 'fas fa-folder';
+  color = '';
+  icon = '';
   position = 0;
-  isAppeal = false;
-  saving = false;
-  error: any = null;
 
   oninit(vnode: any) {
     super.oninit(vnode);
-    const category = this.attrs && this.attrs.category;
-    this.category = category || null;
-    this.editId = category ? category.id() : null;
-    this.name = (category && category.name()) || '';
-    this.slug = (category && category.slug()) || '';
-    this.description = (category && category.description()) || '';
-    this.color = (category && category.color()) || '#07adcc';
-    this.icon = (category && category.icon()) || 'fas fa-folder';
-    this.position = category && category.position() !== undefined ? category.position() : 0;
-    this.isAppeal = !!(category && category.isAppeal());
-    this.saving = false;
-    this.error = null;
+    this.category = this.attrs.category || null;
+    if (this.category) {
+      this.name = this.category.name() || '';
+      this.slug = this.category.slug() || '';
+      this.description = this.category.description() || '';
+      this.color = this.category.color() || '';
+      this.icon = this.category.icon() || '';
+      this.position = this.category.position() || 0;
+    }
   }
 
   className() {
-    return 'LinkRobinsWikiCategoryEditorModal Modal--small';
+    return 'Modal--small LinkRobinsWiki-categoryEditor';
   }
 
   title() {
-    return this.editId
-      ? tx('linkrobins-wiki.admin.category_editor.title_edit')
-      : tx('linkrobins-wiki.admin.category_editor.title_new');
+    return this.category
+      ? t('linkrobins-wiki.admin.category_editor.title_edit')
+      : t('linkrobins-wiki.admin.category_editor.title_new');
   }
 
   content() {
-    const colorField = m(ColorPreviewInput, {
-      className: 'FormControl',
-      placeholder: '#07adcc',
-      value: this.color,
-      disabled: this.saving,
-      oninput: (e: any) => {
-        this.color = e.target.value;
-      },
-      onchange: (e: any) => {
-        this.color = e.target.value;
-      },
-    });
-
-    const groups = [
-      m('div', { className: 'Form-group' }, [
-        m('label', null, tx('linkrobins-wiki.admin.category_editor.field_name')),
-        m('input', {
-          type: 'text',
-          className: 'FormControl',
-          value: this.name,
-          disabled: this.saving,
-          oninput: (e: any) => {
-            this.name = e.target.value;
-          },
-        }),
-      ]),
-
-      m('div', { className: 'Form-group' }, [
-        m('label', null, tx('linkrobins-wiki.admin.category_editor.field_slug')),
-        m('input', {
-          type: 'text',
-          className: 'FormControl',
-          value: this.slug,
-          placeholder: tx('linkrobins-wiki.admin.category_editor.field_slug_placeholder'),
-          disabled: this.saving,
-          oninput: (e: any) => {
-            this.slug = e.target.value;
-          },
-        }),
-        m('div', { className: 'helpText' }, tx('linkrobins-wiki.admin.category_editor.field_slug_help')),
-      ]),
-
-      m('div', { className: 'Form-group' }, [
-        m('label', null, tx('linkrobins-wiki.admin.category_editor.field_description')),
-        m('textarea', {
-          className: 'FormControl',
-          rows: 3,
-          value: this.description,
-          disabled: this.saving,
-          oninput: (e: any) => {
-            this.description = e.target.value;
-          },
-        }),
-      ]),
-
-      m('div', { className: 'Form-group' }, [
-        m('label', null, tx('linkrobins-wiki.admin.category_editor.field_color')),
-        colorField,
-        m('div', { className: 'helpText' }, tx('linkrobins-wiki.admin.category_editor.field_color_help')),
-      ]),
-
-      m('div', { className: 'Form-group' }, [
-        m('label', null, tx('linkrobins-wiki.admin.category_editor.field_icon')),
-        m('input', {
-          type: 'text',
-          className: 'FormControl',
-          value: this.icon,
-          disabled: this.saving,
-          placeholder: 'fas fa-folder',
-          oninput: (e: any) => {
-            this.icon = e.target.value;
-          },
-        }),
-        m('div', { className: 'helpText' }, tx('linkrobins-wiki.admin.category_editor.field_icon_help')),
-      ]),
-
-      m('div', { className: 'Form-group' }, [
-        m('label', null, tx('linkrobins-wiki.admin.category_editor.field_position')),
-        m('input', {
-          type: 'number',
-          className: 'FormControl',
-          value: this.position,
-          disabled: this.saving,
-          oninput: (e: any) => {
-            this.position = parseInt(e.target.value, 10) || 0;
-          },
-        }),
-        m('div', { className: 'helpText' }, tx('linkrobins-wiki.admin.category_editor.field_position_help')),
-      ]),
-
-      m('div', { className: 'Form-group' }, [
-        m(
-          'div',
-          null,
-          m('label', { className: 'checkbox' }, [
-            m('input', {
-              type: 'checkbox',
-              checked: this.isAppeal,
-              disabled: this.saving,
-              onchange: (e: any) => {
-                this.isAppeal = !!e.target.checked;
-              },
-            }),
-            ' ' + tx('linkrobins-wiki.admin.category_editor.field_is_appeal'),
-          ])
-        ),
-        m('div', { className: 'helpText' }, tx('linkrobins-wiki.admin.category_editor.field_is_appeal_help')),
-      ]),
-
-      m('div', { className: 'Form-group Form-controls' }, [
-        m(
-          Button,
-          {
-            type: 'submit',
-            className: 'Button Button--primary',
-            loading: this.saving,
-            disabled: !this.name.trim(),
-          },
-          this.editId
-            ? tx('linkrobins-wiki.admin.category_editor.submit_update')
-            : tx('linkrobins-wiki.admin.category_editor.submit_create')
-        ),
-
-        this.editId
-          ? m(
-              'button',
-              {
-                type: 'button',
-                className: 'Button LinkRobinsWikiCategoryEditorModal-delete',
-                disabled: this.saving,
-                onclick: () => {
-                  this._delete();
-                },
-              },
-              tx('linkrobins-wiki.admin.categories.delete_button')
-            )
-          : null,
-      ]),
-    ];
-
     return m('div', { className: 'Modal-body' }, [
-      this.error ? m('div', { className: 'Alert Alert--danger' }, this._errorMessage()) : null,
-      m(Form, null, groups),
+      this._field('field_name', m('input', {
+        className: 'FormControl',
+        value: this.name,
+        oninput: (e: any) => { this.name = e.target.value; },
+      })),
+
+      this._field('field_slug', m('input', {
+        className: 'FormControl',
+        value: this.slug,
+        placeholder: tx('linkrobins-wiki.admin.category_editor.field_slug_placeholder'),
+        oninput: (e: any) => { this.slug = e.target.value; },
+      }), 'field_slug_help'),
+
+      this._field('field_description', m('textarea', {
+        className: 'FormControl',
+        value: this.description,
+        oninput: (e: any) => { this.description = e.target.value; },
+      })),
+
+      this._field('field_color', m('input', {
+        className: 'FormControl',
+        type: 'text',
+        value: this.color,
+        placeholder: '#3b82f6',
+        oninput: (e: any) => { this.color = e.target.value; },
+      }), 'field_color_help'),
+
+      this._field('field_icon', m('input', {
+        className: 'FormControl',
+        value: this.icon,
+        placeholder: 'fas fa-book',
+        oninput: (e: any) => { this.icon = e.target.value; },
+      }), 'field_icon_help'),
+
+      this._field('field_position', m('input', {
+        className: 'FormControl',
+        type: 'number',
+        value: String(this.position),
+        oninput: (e: any) => { this.position = parseInt(e.target.value, 10) || 0; },
+      }), 'field_position_help'),
+
+      m('div', { className: 'Form-group' }, m(
+        Button,
+        {
+          className: 'Button Button--primary',
+          type: 'submit',
+          loading: this.saving,
+          disabled: this.saving,
+        },
+        this.category
+          ? t('linkrobins-wiki.admin.category_editor.submit_update')
+          : t('linkrobins-wiki.admin.category_editor.submit_create')
+      )),
+    ]);
+  }
+
+  _field(labelKey: string, control: any, helpKey?: string) {
+    return m('div', { className: 'Form-group' }, [
+      m('label', t('linkrobins-wiki.admin.category_editor.' + labelKey)),
+      control,
+      helpKey ? m('p', { className: 'helpText' }, t('linkrobins-wiki.admin.category_editor.' + helpKey)) : null,
     ]);
   }
 
   onsubmit(e: any) {
-    if (e && e.preventDefault) e.preventDefault();
-    if (this.saving || !this.name.trim()) return;
-    this._save();
-  }
+    e.preventDefault();
+    if (this.saving) return;
 
-  _errorMessage() {
-    const err = this.error;
-    if (!err) return tx('linkrobins-wiki.admin.common.unknown_error');
-    try {
-      const errors = err.response && err.response.errors;
-      if (errors && errors[0]) {
-        return errors[0].detail || errors[0].title || tx('linkrobins-wiki.admin.rate_limits.error_save');
-      }
-    } catch (e) {}
-    return tx('linkrobins-wiki.admin.category_editor.error_save');
-  }
-
-  _save() {
     this.saving = true;
-    this.error = null;
-    m.redraw();
-
-    const attrs: any = {
-      name: this.name.trim(),
+    const attrs: Record<string, any> = {
+      name: (this.name || '').trim(),
+      slug: (this.slug || '').trim(),
       description: this.description,
       color: this.color,
       icon: this.icon,
       position: this.position,
-      isAppeal: this.isAppeal,
     };
-    if (this.slug && this.slug.trim()) {
-      attrs.slug = this.slug.trim();
-    }
 
     saveCategory(this.category, attrs)
       .then(() => {
         this.saving = false;
-        try {
-          if (this.attrs.onSaved) this.attrs.onSaved();
-        } catch (e) {}
-        try {
-          app.modal.close();
-        } catch (e) {}
+        if (typeof this.attrs.onsaved === 'function') this.attrs.onsaved();
+        this.hide();
       })
-      .catch((err: any) => {
+      .catch(() => {
         this.saving = false;
-        this.error = err;
-        console.error('[linkrobins/wiki] save category failed:', err);
-        m.redraw();
-      });
-  }
-
-  // Delete from within the editor (parity with the Tags "New Tag" modal).
-  _delete() {
-    if (!this.category || !this.editId) return;
-
-    const name = this.category.name() || tx('linkrobins-wiki.admin.categories.this_category');
-    const count = this.category.ticketCount() || 0;
-    const warning =
-      count > 0
-        ? tx('linkrobins-wiki.admin.categories.delete_confirm_with_tickets', { count })
-        : tx('linkrobins-wiki.admin.categories.delete_confirm_named', { name });
-    try {
-      if (!window.confirm(warning)) return;
-    } catch (e) {}
-
-    this.saving = true;
-    this.error = null;
-    m.redraw();
-
-    deleteCategory(this.category)
-      .then(() => {
-        this.saving = false;
-        try {
-          if (this.attrs.onSaved) this.attrs.onSaved();
-        } catch (e) {}
-        try {
-          app.modal.close();
-        } catch (e) {}
-      })
-      .catch((err: any) => {
-        this.saving = false;
-        this.error = err;
-        console.error('[linkrobins/wiki] delete category failed:', err);
+        this.alertAttrs = { type: 'error', content: tx('linkrobins-wiki.admin.category_editor.error_save') };
         m.redraw();
       });
   }

@@ -15,30 +15,21 @@ app.initializers.add('linkrobins-wiki', () => {
     if (typeof app.registry.registerPermission === 'function') {
       app.registry.registerPermission(
         {
-          permission: 'linkrobins-wiki.handle_tickets',
-          icon: 'fas fa-life-ring',
-          label: tx('linkrobins-wiki.admin.permissions.handle_tickets'),
+          permission: 'linkrobins-wiki.createArticle',
+          icon: 'fas fa-pencil-alt',
+          label: tx('linkrobins-wiki.admin.permissions.create_article'),
         },
-        'moderate',
+        'start',
         95
       );
       app.registry.registerPermission(
         {
-          permission: 'linkrobins-wiki.manage_appeal_bans',
-          icon: 'fas fa-ban',
-          label: tx('linkrobins-wiki.admin.permissions.manage_appeal_bans'),
+          permission: 'linkrobins-wiki.editArticles',
+          icon: 'fas fa-edit',
+          label: tx('linkrobins-wiki.admin.permissions.edit_articles'),
         },
         'moderate',
-        94
-      );
-      app.registry.registerPermission(
-        {
-          permission: 'linkrobins-wiki.force_delete_tickets',
-          icon: 'fas fa-trash',
-          label: tx('linkrobins-wiki.admin.permissions.force_delete_tickets'),
-        },
-        'moderate',
-        93
+        95
       );
     }
   } catch (e) {

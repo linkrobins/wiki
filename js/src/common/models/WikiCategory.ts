@@ -1,8 +1,7 @@
 import Model from 'flarum/common/Model';
 
 /**
- * A wiki category (e.g. "Billing", "Appeals"). `isAppeal` categories are
- * the only ones a suspended/banned user may file under.
+ * A wiki category (e.g. "Guides", "Reference") used to organise articles.
  */
 export default class WikiCategory extends Model {
   name = Model.attribute<string>('name');
@@ -11,8 +10,7 @@ export default class WikiCategory extends Model {
   color = Model.attribute<string | null>('color');
   icon = Model.attribute<string | null>('icon');
   position = Model.attribute<number>('position');
-  isAppeal = Model.attribute<boolean>('isAppeal');
-  ticketCount = Model.attribute<number>('ticketCount');
+  articleCount = Model.attribute<number>('articleCount');
 
   createdAt = Model.attribute('createdAt', Model.transformDate);
   updatedAt = Model.attribute('updatedAt', Model.transformDate);

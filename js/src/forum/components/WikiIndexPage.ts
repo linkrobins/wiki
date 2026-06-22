@@ -4,70 +4,48 @@ import PageStructure from 'flarum/forum/components/PageStructure';
 import WikiIndexSidebar from './WikiIndexSidebar';
 import { tr } from '../utils/translate';
 import { basePath, BASE_PATH, formatDate, safeNavigate } from '../utils/helpers';
-import { canCreateWikiTicket, canHandleWikiTickets } from '../utils/permissions';
-import { statusBadge, FILTER_OPTIONS, filterLabel } from '../utils/status';
-import { loadTickets } from '../utils/api';
+import { canCreateWikiArticle } from '../utils/permissions';
+import { loadArticles } from '../utils/api';
 
 export default class WikiIndexPage extends Page {
   loading = true;
   error: any = null;
-  tickets: any[] = [];
-  filter: string | null = 'mine';
-  _lastLoadedFilter: string | null = 'mine';
+  articles: any[] = [];
+  category: string | null = null;
 
   oninit(vnode: any) {
     super.oninit(vnode);
     this.loading = true;
     this.error = null;
-    this.tickets = [];
-    this.filter = this._filterFromAttrs(this.attrs);
+    this.articles = [];
+    this.category = m.route.param('category') || null;
     try {
       app.setTitle(tr('nav', 'Wiki'));
     } catch (e) {}
-    this._lastLoadedFilter = this.filter;
     this._load();
   }
 
   onbeforeupdate(vnode: any) {
-    const nextFilter = this._filterFromAttrs(vnode.attrs);
-    if (nextFilter !== this._lastLoadedFilter) {
-      this.filter = nextFilter;
-      this._lastLoadedFilter = nextFilter;
+    const next = m.route.param('category') || null;
+    if (next !== this.category) {
+      this.category = next;
       Promise.resolve().then(() => this._load());
     }
     return true;
-  }
-
-  _filterFromAttrs(attrs: any): string {
-    const defaultFilter = canHandleWikiTickets() ? 'open' : 'mine';
-    const s = attrs && attrs.status;
-    if (!s) return defaultFilter;
-    for (let i = 0; i < FILTER_OPTIONS.length; i++) {
-      if (FILTER_OPTIONS[i].id === s) return s;
-    }
-    return defaultFilter;
   }
 
   _load() {
     this.loading = true;
     m.redraw();
 
-    const filter: any = {};
-    if (canHandleWikiTickets() && this.filter !== 'mine') {
-      if (this.filter && this.filter !== 'all') {
-        filter.status = this.filter;
-      }
-    } else {
-      filter.mine = '1';
-    }
     const params: any = { page: { limit: 25 } };
-    if (Object.keys(filter).length) {
-      params.filter = filter;
+    if (this.category) {
+      params.filter = { categoryId: this.category };
     }
 
-    loadTickets(params)
-      .then((tickets: any[]) => {
-        this.tickets = tickets || [];
+    loadArticles(params)
+      .then((articles: any[]) => {
+        this.articles = articles || [];
         this.loading = false;
         m.redraw();
       })
@@ -97,10 +75,7 @@ export default class WikiIndexPage extends Page {
 
   _renderSidebar() {
     try {
-      return m(WikiIndexSidebar, {
-        className: 'LinkRobinsWiki-sidebar',
-        activeFilter: this.filter,
-      });
+      return m(WikiIndexSidebar, { className: 'LinkRobinsWiki-sidebar' });
     } catch (e) {
       console.error('[linkrobins/wiki] sidebar render failed:', e);
     }
@@ -108,18 +83,9 @@ export default class WikiIndexPage extends Page {
   }
 
   _renderHeader() {
-    const label = this._headingFor(this.filter);
     return m('header', { className: 'LinkRobinsWiki-header' }, [
-      m('h1', { className: 'LinkRobinsWiki-title' }, [m('i', { className: 'fas fa-life-ring' }), ' ', label]),
+      m('h1', { className: 'LinkRobinsWiki-title' }, [m('i', { className: 'fas fa-book' }), ' ', tr('nav', 'Wiki')]),
     ]);
-  }
-
-  _headingFor(filter: string | null) {
-    if (!filter || filter === 'mine') return tr('nav', 'Wiki');
-    for (let i = 0; i < FILTER_OPTIONS.length; i++) {
-      if (FILTER_OPTIONS[i].id === filter) return filterLabel(FILTER_OPTIONS[i]);
-    }
-    return tr('nav', 'Wiki');
   }
 
   _renderList() {
@@ -127,29 +93,29 @@ export default class WikiIndexPage extends Page {
       return m(LoadingIndicator);
     }
     if (this.error) {
-      return m('div', { className: 'LinkRobinsWiki-empty' }, tr('errors.load_tickets', 'Could not load tickets.'));
+      return m('div', { className: 'LinkRobinsWiki-empty' }, tr('errors.load_articles', 'Could not load articles.'));
     }
-    if (!this.tickets.length) {
+    if (!this.articles.length) {
       return m(
         'div',
         { className: 'LinkRobinsWiki-empty' },
-        canCreateWikiTicket()
-          ? tr('index.empty_own', 'No tickets yet. Click "New ticket" to open one.')
-          : tr('index.empty', 'No tickets to show.')
+        canCreateWikiArticle()
+          ? tr('index.empty_own', 'No articles yet. Click "New article" to write one.')
+          : tr('index.empty', 'No articles to show.')
       );
     }
     return m(
       'div',
       { className: 'LinkRobinsWiki-list' },
-      this.tickets.map((t: any) => this._renderRow(t))
+      this.articles.map((a: any) => this._renderRow(a))
     );
   }
 
-  _renderRow(ticket: any) {
-    const user = ticket.user && ticket.user();
-    const cat = ticket.category && ticket.category();
-    const href = basePath() + BASE_PATH + '/' + encodeURIComponent(ticket.id());
-    const isDeleted = !!(ticket.isDeleted && ticket.isDeleted());
+  _renderRow(article: any) {
+    const user = article.user && article.user();
+    const cat = article.category && article.category();
+    const href = basePath() + BASE_PATH + '/' + encodeURIComponent(article.id());
+    const isDeleted = !!(article.isDeleted && article.isDeleted());
 
     return m(
       'a',
@@ -159,12 +125,12 @@ export default class WikiIndexPage extends Page {
         onclick: (e: any) => {
           safeNavigate(href, e);
         },
-        key: 'ticket-' + ticket.id(),
+        key: 'article-' + article.id(),
       },
       [
         m('div', { className: 'LinkRobinsWiki-row-main' }, [
           m('div', { className: 'LinkRobinsWiki-row-subject' }, [
-            ticket.subject() || tr('index.untitled', 'Untitled'),
+            article.title() || tr('index.untitled', 'Untitled'),
             isDeleted
               ? m('span', { className: 'LinkRobinsWiki-row-deletedBadge' }, tr('index.deleted_badge', 'Deleted'))
               : null,
@@ -180,10 +146,9 @@ export default class WikiIndexPage extends Page {
             user
               ? m('span', { className: 'LinkRobinsWiki-row-user' }, user.displayName() || user.username())
               : null,
-            m('span', { className: 'LinkRobinsWiki-row-date' }, formatDate(ticket.lastReplyAt() || ticket.createdAt())),
+            m('span', { className: 'LinkRobinsWiki-row-date' }, formatDate(article.lastEditedAt() || article.createdAt())),
           ]),
         ]),
-        m('div', { className: 'LinkRobinsWiki-row-status' }, statusBadge(ticket.status())),
       ]
     );
   }

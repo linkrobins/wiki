@@ -8,29 +8,21 @@ use Flarum\User\User;
 /**
  * Global wiki permissions.
  *
- *   linkrobins-wiki.handle_tickets -- staff: see and respond to all tickets,
- *                                        change status, add internal notes,
- *                                        assign tickets
+ *   linkrobins-wiki.createArticle -- start new articles
+ *   linkrobins-wiki.editArticles  -- edit / moderate any article
  *
- * Admins always pass. Anyone authenticated (including banned users, for
- * appeal categories specifically) can attempt to create a ticket -- the
- * actual gate is in the resource controller, where rate limits and the
- * appeal-ban flag are checked.
+ * Admins always pass. Category management is admin-only.
  */
 class GlobalPolicy extends AbstractPolicy
 {
-    public function handleTickets(User $actor): bool
+    public function createArticle(User $actor): bool
     {
-        return WikiAbilities::isStaff($actor);
+        return WikiAbilities::canCreate($actor);
     }
 
-    public function createTicket(User $actor): bool
+    public function editArticles(User $actor): bool
     {
-        // Anyone logged in can attempt to create a ticket. Rate limits,
-        // appeal-ban checks, and ban-state-vs-category checks happen in the
-        // resource's `creating` hook with proper error messages -- not here,
-        // because a policy returning false produces a generic 403.
-        return ! $actor->isGuest();
+        return WikiAbilities::isEditor($actor);
     }
 
     public function manageCategories(User $actor): bool

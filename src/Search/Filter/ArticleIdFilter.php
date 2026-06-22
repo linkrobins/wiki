@@ -8,19 +8,19 @@ use Flarum\Search\SearchState;
 use Flarum\Search\ValidateFilterTrait;
 
 /**
- * `filter[ticketId]=N` narrows a reply listing to a single ticket.
- * The ticket-view page always sends this; without it, the reply list
- * would return every reply the actor can see across all tickets.
+ * `filter[articleId]=N` narrows a revision listing to a single article. The
+ * article history view always sends this; without it the revision list would
+ * return every revision across all articles.
  *
  * @implements FilterInterface<DatabaseSearchState>
  */
-class TicketIdFilter implements FilterInterface
+class ArticleIdFilter implements FilterInterface
 {
     use ValidateFilterTrait;
 
     public function getFilterKey(): string
     {
-        return 'ticketId';
+        return 'articleId';
     }
 
     public function filter(SearchState $state, string|array $value, bool $negate): void
@@ -30,7 +30,7 @@ class TicketIdFilter implements FilterInterface
             return;
         }
         $state->getQuery()->whereIn(
-            'linkrobins_wiki_replies.ticket_id',
+            'linkrobins_wiki_revisions.article_id',
             $ids,
             'and',
             $negate

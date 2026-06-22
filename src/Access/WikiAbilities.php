@@ -5,45 +5,43 @@ namespace LinkRobins\Wiki\Access;
 use Flarum\User\User;
 
 /**
- * Single source of truth for "who counts as wiki staff".
+ * Single source of truth for the wiki permission checks shared across the
+ * policies, searchers, resources and service provider.
  *
- * The check (admin, or a user holding the handle_tickets permission) was
- * previously copy-pasted across the policies, searchers, resources, the
- * notifier and the service provider. Centralising it here means a future
- * change to the permission key -- or adding a new staff tier -- touches one
- * place instead of a dozen.
+ *   createArticle -- start a new article
+ *   editArticles  -- edit and moderate (soft-delete / restore) any article,
+ *                    not just one's own
+ *
+ * Authors can always edit their own articles regardless of editArticles; that
+ * ownership check lives in WikiArticlePolicy. Permanent (force-)deletion is
+ * admin-only and is not represented here.
  */
 class WikiAbilities
 {
-    public const HANDLE_TICKETS = 'linkrobins-wiki.handle_tickets';
-    public const MANAGE_APPEAL_BANS = 'linkrobins-wiki.manage_appeal_bans';
-    public const FORCE_DELETE_TICKETS = 'linkrobins-wiki.force_delete_tickets';
+    public const CREATE_ARTICLE = 'linkrobins-wiki.createArticle';
+    public const EDIT_ARTICLES = 'linkrobins-wiki.editArticles';
 
     /**
-     * Whether the actor may see and act on all tickets (admins always do).
+     * Whether the actor may edit and moderate any article (admins always can).
      */
-    public static function isStaff(User $actor): bool
+    public static function isEditor(User $actor): bool
     {
         if ($actor->isGuest()) {
             return false;
         }
 
-        // Admins hold every permission, but the explicit short-circuit keeps
-        // the intent obvious and matches the original inline checks.
-        return $actor->isAdmin() || $actor->hasPermission(self::HANDLE_TICKETS);
+        return $actor->isAdmin() || $actor->hasPermission(self::EDIT_ARTICLES);
     }
 
     /**
-     * Whether the actor may permanently (force-)delete tickets. Admins always
-     * can; other staff need the explicit force_delete_tickets permission.
-     * Plain soft-delete / restore only requires isStaff().
+     * Whether the actor may start new articles (admins always can).
      */
-    public static function canForceDelete(User $actor): bool
+    public static function canCreate(User $actor): bool
     {
         if ($actor->isGuest()) {
             return false;
         }
 
-        return $actor->isAdmin() || $actor->hasPermission(self::FORCE_DELETE_TICKETS);
+        return $actor->isAdmin() || $actor->hasPermission(self::CREATE_ARTICLE);
     }
 }

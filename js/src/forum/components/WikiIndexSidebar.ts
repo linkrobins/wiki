@@ -6,31 +6,43 @@ import Separator from 'flarum/common/components/Separator';
 import ItemList from 'flarum/common/utils/ItemList';
 import { tr } from '../utils/translate';
 import { basePath, BASE_PATH, safeNavigate } from '../utils/helpers';
-import { canCreateWikiTicket, canHandleWikiTickets } from '../utils/permissions';
-import { FILTER_OPTIONS, filterLabel, filterHrefFor } from '../utils/status';
+import { canCreateWikiArticle } from '../utils/permissions';
+import { loadCategories } from '../utils/api';
 
 export default class WikiIndexSidebar extends IndexSidebar {
+  categories: any[] = [];
+
+  oninit(vnode: any) {
+    super.oninit(vnode);
+    loadCategories()
+      .then((cats: any[]) => {
+        this.categories = cats || [];
+        m.redraw();
+      })
+      .catch(() => {});
+  }
+
   items() {
     const items = new ItemList();
 
-    // "New ticket" primary button -- mirrors the blog's "Compose" button.
-    if (canCreateWikiTicket()) {
+    // "New article" primary button -- mirrors the blog's "Compose" button.
+    if (canCreateWikiArticle()) {
       const newHref = basePath() + BASE_PATH + '/new';
       items.add(
-        'newTicket',
+        'newArticle',
         m(
           Button,
           {
             icon: 'fas fa-plus',
-            className: 'Button Button--primary LinkRobinsWiki-newTicketButton',
+            className: 'Button Button--primary LinkRobinsWiki-newArticleButton',
             itemClassName: 'App-primaryControl',
-            'aria-label': tr('index.new_ticket', 'New ticket'),
-            title: tr('index.new_ticket_tooltip', 'Open a new wiki ticket'),
+            'aria-label': tr('index.new_article', 'New article'),
+            title: tr('index.new_article_tooltip', 'Write a new article'),
             onclick: (e: any) => {
               safeNavigate(newHref, e);
             },
           },
-          tr('index.new_ticket', 'New ticket')
+          tr('index.new_article', 'New article')
         ),
         110
       );
@@ -63,12 +75,9 @@ export default class WikiIndexSidebar extends IndexSidebar {
     }
     if (!items) return new ItemList();
 
-    // The Tags extension injects a tag list (the "Tags" link, a separator, one
-    // item per tag, and a "More" link) into IndexSidebar.navItems via extend().
-    // Because we subclass IndexSidebar, super.navItems() inherits all of those.
-    // Strip the per-tag clutter (the individual tags, the "More" link and the
-    // separator that precedes them) but KEEP the top-level "Tags" link so users
-    // still have a way back to the tags page from the wiki sidebar.
+    // The Tags extension injects a tag list into IndexSidebar.navItems via
+    // extend(); because we subclass IndexSidebar we inherit it. Strip the
+    // per-tag clutter but keep the top-level "Tags" link.
     try {
       const all = (items as any)._items || {};
       Object.keys(all).forEach((key) => {
@@ -78,26 +87,35 @@ export default class WikiIndexSidebar extends IndexSidebar {
       });
     } catch (e) {}
 
-    const canHandle = canHandleWikiTickets();
-    const currentFilter =
-      this.attrs && Object.prototype.hasOwnProperty.call(this.attrs, 'activeFilter')
-        ? this.attrs.activeFilter
-        : 'mine'; // may be null (= nothing active)
+    const active = m.route.param('category');
 
-    items.add('linkrobinsWikiSeparator', m(Separator), -11);
+    items.add('linkrobinsWikiSeparator', m(Separator), -10);
 
-    FILTER_OPTIONS.forEach((opt, i) => {
-      if (opt.staffOnly && !canHandle) return;
+    items.add(
+      'wiki-all',
+      m(
+        LinkButton,
+        {
+          href: basePath() + BASE_PATH,
+          icon: 'fas fa-book',
+          active: !active,
+        },
+        tr('index.all_articles', 'All articles')
+      ),
+      -11
+    );
+
+    this.categories.forEach((cat: any, i: number) => {
       items.add(
-        'wiki-filter-' + opt.id,
+        'wiki-cat-' + cat.id(),
         m(
           LinkButton,
           {
-            href: filterHrefFor(opt.id),
-            icon: opt.icon,
-            active: currentFilter === opt.id,
+            href: basePath() + BASE_PATH + '?category=' + encodeURIComponent(cat.id()),
+            icon: cat.icon() || 'fas fa-folder',
+            active: String(active) === String(cat.id()),
           },
-          filterLabel(opt)
+          cat.name()
         ),
         -12 - i
       );

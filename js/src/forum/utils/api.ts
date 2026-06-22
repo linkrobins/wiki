@@ -1,6 +1,5 @@
 import { tr } from './translate';
-import type WikiTicket from '../../common/models/WikiTicket';
-import type WikiReply from '../../common/models/WikiReply';
+import type WikiArticle from '../../common/models/WikiArticle';
 import type WikiCategory from '../../common/models/WikiCategory';
 
 function apiUrl(): string {
@@ -9,32 +8,32 @@ function apiUrl(): string {
 
 // --- Reads (cached + relationship-resolved via the store) ---------------
 
-export function loadTickets(params?: Record<string, any>): Promise<any> {
+export function loadArticles(params?: Record<string, any>): Promise<any> {
   return app.store.find(
-    'linkrobins-wiki-tickets',
+    'linkrobins-wiki-articles',
     Object.assign(
       {
-        sort: '-lastReplyAt',
+        sort: '-lastEditedAt',
         page: { limit: 25 },
-        include: 'user,category,assignedStaff',
+        include: 'user,category',
       },
       params || {}
     )
   );
 }
 
-export function loadTicket(id: string | number): Promise<WikiTicket> {
-  return app.store.find('linkrobins-wiki-tickets', String(id), {
-    include: 'user,category,assignedStaff',
+export function loadArticle(id: string | number): Promise<WikiArticle> {
+  return app.store.find('linkrobins-wiki-articles', String(id), {
+    include: 'user,category,lastEditedBy',
   });
 }
 
-export function loadReplies(ticketId: string | number): Promise<any> {
-  return app.store.find('linkrobins-wiki-replies', {
-    sort: 'createdAt',
-    filter: { ticketId },
-    page: { limit: 200 },
-    include: 'user,editedBy',
+export function loadRevisions(articleId: string | number): Promise<any> {
+  return app.store.find('linkrobins-wiki-revisions', {
+    sort: '-createdAt',
+    filter: { articleId },
+    page: { limit: 100 },
+    include: 'user',
   });
 }
 
@@ -47,32 +46,28 @@ export function loadCategories(): Promise<any> {
 
 // --- Writes (store records: cached, reactive, relationship-aware) --------
 
-export function createTicket(
-  subject: string,
-  category: WikiCategory,
-  body: string
-): Promise<WikiTicket> {
+export function createArticle(
+  title: string,
+  body: string,
+  category: WikiCategory | null
+): Promise<WikiArticle> {
   return app.store
-    .createRecord('linkrobins-wiki-tickets')
-    .save({ subject, relationships: { category } })
-    .then((ticket: WikiTicket) => postReply(ticket, body, false).then(() => ticket));
+    .createRecord('linkrobins-wiki-articles')
+    .save({ title, content: body, relationships: { category: category || null } });
 }
 
-export function postReply(
-  ticket: WikiTicket,
-  content: string,
-  isInternal: boolean
-): Promise<WikiReply> {
-  return app.store
-    .createRecord('linkrobins-wiki-replies')
-    .save({ content, isInternalNote: !!isInternal, relationships: { ticket } });
+export function updateArticle(
+  article: WikiArticle,
+  attrs: Record<string, any>
+): Promise<WikiArticle> {
+  return article.save(attrs);
 }
 
 // --- File upload --------------------------------------------------------
 //
 // fof/upload is a bespoke multipart endpoint, not a JSON:API resource the
 // store models, so it stays a raw request. Used only by the plain-textarea
-// fallback editors -- the real docked composer ships FoF Upload's own button.
+// fallback editor -- the real docked composer ships FoF Upload's own button.
 //
 // When the caller is backed by Flarum's TextEditor (which owns its own
 // textarea), pass `editorGetter` so we insert into the live editor (whose

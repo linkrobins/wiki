@@ -9,37 +9,21 @@ function isAdmin(): boolean {
   }
 }
 
-export function canCreateWikiTicket(): boolean {
+export function canCreateWikiArticle(): boolean {
   try {
     if (!app.session || !app.session.user) return false;
     if (isAdmin()) return true;
-    return !!readForumAttribute('canCreateWikiTicket');
+    return !!readForumAttribute('canCreateWikiArticle');
   } catch (e) {
     return false;
   }
 }
 
-export function canHandleWikiTickets(): boolean {
+export function canEditWikiArticles(): boolean {
   try {
     if (!app.session || !app.session.user) return false;
     if (isAdmin()) return true;
-    return !!readForumAttribute('canHandleWikiTickets');
-  } catch (e) {
-    return false;
-  }
-}
-
-export function wikiAppealBanned(): boolean {
-  try {
-    return !!readForumAttribute('wikiAppealBanned');
-  } catch (e) {
-    return false;
-  }
-}
-
-export function isUserSuspended(): boolean {
-  try {
-    return !!readForumAttribute('wikiSuspended');
+    return !!readForumAttribute('canEditWikiArticles');
   } catch (e) {
     return false;
   }

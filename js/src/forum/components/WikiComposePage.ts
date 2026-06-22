@@ -1,504 +1,198 @@
 import Page from 'flarum/common/components/Page';
 import LoadingIndicator from 'flarum/common/components/LoadingIndicator';
-import PageStructure from 'flarum/forum/components/PageStructure';
-import WikiIndexSidebar from './WikiIndexSidebar';
+import TextEditor from 'flarum/common/components/TextEditor';
+import Select from 'flarum/common/components/Select';
+import Button from 'flarum/common/components/Button';
 import { tr } from '../utils/translate';
-import { BASE_PATH, showError } from '../utils/helpers';
-import { isUserSuspended, wikiAppealBanned } from '../utils/permissions';
-import { loadCategories, createTicket, uploadFilesToBody } from '../utils/api';
-import {
-  wikiComposerWikied,
-  wikiComposerOpenFor,
-  openWikiComposer,
-  wikiComposerPreview,
-} from '../utils/composer';
+import { basePath, BASE_PATH, showError } from '../utils/helpers';
+import { canCreateWikiArticle } from '../utils/permissions';
+import { loadArticle, loadCategories, createArticle, updateArticle } from '../utils/api';
 
+/**
+ * Full-page editor for creating a new article (/wiki/new) or editing an
+ * existing one (/wiki/:id/edit). Title + optional category + markdown body.
+ */
 export default class WikiComposePage extends Page {
   loading = true;
+  loadError = false;
   saving = false;
-  error: any = null;
+  editing = false;
+  article: any = null;
   categories: any[] = [];
-  subject = '';
+
+  title = '';
   body = '';
-  categoryId = '';
-  uploadingCount = 0;
-  uploadError: any = null;
-  _composeFileInput: any = null;
-  _composeComposer: any = null;
+  categoryId: string = '';
 
   oninit(vnode: any) {
     super.oninit(vnode);
-    this.loading = true;
-    this.saving = false;
-    this.error = null;
-    this.categories = [];
-    this.subject = '';
-    this.body = '';
-    this.categoryId = '';
-    this.uploadingCount = 0;
-    this.uploadError = null;
+
+    const id = m.route.param('id');
+    this.editing = !!id;
+
     try {
-      app.setTitle(tr('index.new_ticket', 'New ticket'));
+      app.setTitle(this.editing ? tr('compose.title_edit', 'Edit article') : tr('compose.title', 'New article'));
     } catch (e) {}
 
-    if (!app.session || !app.session.user) {
-      m.route.set('/');
-      return;
-    }
+    const work: Promise<any>[] = [
+      loadCategories()
+        .then((cats: any[]) => {
+          this.categories = cats || [];
+        })
+        .catch(() => {}),
+    ];
 
-    this._loadCategories();
-  }
-
-  _loadCategories() {
-    loadCategories()
-      .then((cats: any[]) => {
-        let list = cats || [];
-        // Banned users only see appeal categories.
-        if (isUserSuspended()) {
-          list = list.filter((c: any) => c.isAppeal() === true);
-        }
-        this.categories = list;
-        // Only auto-select when there's a single category, so the picker (with
-        // descriptions) is shown whenever there's a real choice to make.
-        if (list.length === 1) {
-          this.categoryId = String(list[0].id());
-        }
-        this.loading = false;
-        m.redraw();
-      })
-      .catch((err: any) => {
-        this.error = err;
-        this.loading = false;
-        console.error('[linkrobins/wiki] categories load failed:', err);
-        m.redraw();
-      });
-  }
-
-  _wrap(inner: any) {
-    return m(
-      PageStructure,
-      {
-        className: 'IndexPage LinkRobinsWiki-page',
-        // No filter is "active" on the compose page -- they're filing a new
-        // ticket, not viewing a list. Pass null so all sidebar items render
-        // as inactive.
-        sidebar: () => m(WikiIndexSidebar, { className: 'LinkRobinsWiki-sidebar', activeFilter: null }),
-      },
-      inner
-    );
-  }
-
-  view() {
-    if (wikiAppealBanned() && isUserSuspended()) {
-      return this._wrap(
-        m('div', { className: 'LinkRobinsWiki-container' }, [
-          m(
-            'header',
-            { className: 'LinkRobinsWiki-header' },
-            m('h1', { className: 'LinkRobinsWiki-title' }, tr('nav', 'Wiki'))
-          ),
-          m(
-            'div',
-            { className: 'LinkRobinsWiki-empty LinkRobinsWiki-empty--blocked' },
-            tr(
-              'compose.appeal_banned',
-              'You are not permitted to file appeals. Please contact the site owner via another channel.'
-            )
-          ),
-        ])
+    if (this.editing) {
+      work.push(
+        loadArticle(id)
+          .then((article: any) => {
+            this.article = article;
+            this.title = article.title() || '';
+            this.body = article.content() || '';
+            const cat = article.category && article.category();
+            this.categoryId = cat ? String(cat.id()) : '';
+          })
+          .catch((err: any) => {
+            this.loadError = true;
+            console.error('[linkrobins/wiki] could not load article for edit:', err);
+          })
       );
+    } else if (!canCreateWikiArticle()) {
+      this.loadError = true;
     }
 
-    if (this.loading) {
-      return this._wrap(m('div', { className: 'LinkRobinsWiki-container' }, m(LoadingIndicator)));
-    }
-
-    if (this.categories.length === 0) {
-      return this._wrap(
-        m('div', { className: 'LinkRobinsWiki-container' }, [
-          m(
-            'header',
-            { className: 'LinkRobinsWiki-header' },
-            m('h1', { className: 'LinkRobinsWiki-title' }, tr('nav', 'Wiki'))
-          ),
-          m(
-            'div',
-            { className: 'LinkRobinsWiki-empty' },
-            isUserSuspended()
-              ? tr('compose.no_appeal_categories', 'No appeal categories are currently available.')
-              : tr('compose.no_categories', 'No wiki categories have been set up yet. Please contact an admin.')
-          ),
-        ])
-      );
-    }
-
-    // Step 1: a category picker showing each category's description. Shown
-    // whenever no category has been chosen yet (more than one to choose from).
-    if (this.categoryId === '') {
-      return this._wrap(this._renderPicker());
-    }
-
-    const composerOpen = wikiComposerOpenFor('new-ticket');
-
-    // With the real composer: keep the subject field on the page and use the
-    // same discussion-style "reply placeholder" box for the message.
-    if (wikiComposerWikied()) {
-      return this._wrap(
-        m('div', { className: 'LinkRobinsWiki-container' }, [
-          this._renderComposeHeader(),
-          this.error
-            ? m('div', { className: 'Alert Alert--danger' }, [m('span', { className: 'Alert-body' }, this._errorMessage())])
-            : null,
-          m('div', { className: 'LinkRobinsWiki-form' }, [
-            m('div', { className: 'Form-group' }, [
-              m('label', null, tr('compose.subject_label', 'Subject')),
-              m('input', {
-                type: 'text',
-                className: 'FormControl',
-                value: this.subject,
-                disabled: this.saving,
-                placeholder: tr('compose.subject_placeholder', 'Short summary of your issue'),
-                maxlength: 200,
-                oninput: (e: any) => {
-                  this.subject = e.target.value;
-                },
-              }),
-            ]),
-            m('div', { className: 'Form-group' }, [
-              m('label', null, tr('compose.message_label', 'Message')),
-              m(
-                'div',
-                { className: 'LinkRobinsWiki-composePreview' },
-                wikiComposerPreview({
-                  composing: composerOpen,
-                  placeholder: tr('compose.message_placeholder_click', 'Click to write your message…'),
-                  onclick: () => this._openComposeComposer(),
-                })
-              ),
-            ]),
-          ]),
-        ])
-      );
-    }
-
-    // Fallback (stripped install without the composer): full inline form.
-    const canSaveFallback =
-      !this.saving && this.subject.trim() !== '' && this.body.trim() !== '' && this.categoryId !== '';
-
-    return this._wrap(
-      m('div', { className: 'LinkRobinsWiki-container' }, [
-        this._renderComposeHeader(),
-        this.error
-          ? m('div', { className: 'Alert Alert--danger' }, [m('span', { className: 'Alert-body' }, this._errorMessage())])
-          : null,
-        m('div', { className: 'LinkRobinsWiki-form' }, [
-          m('div', { className: 'Form-group' }, [
-            m('label', null, tr('compose.subject_label', 'Subject')),
-            m('input', {
-              type: 'text',
-              className: 'FormControl',
-              value: this.subject,
-              disabled: this.saving,
-              placeholder: tr('compose.subject_placeholder', 'Short summary of your issue'),
-              maxlength: 200,
-              oninput: (e: any) => {
-                this.subject = e.target.value;
-              },
-            }),
-          ]),
-          m('div', { className: 'Form-group' }, [
-            m('label', null, tr('compose.message_label', 'Message')),
-            m('textarea', {
-              className: 'FormControl LinkRobinsWiki-body',
-              rows: 10,
-              value: this.body,
-              disabled: this.saving,
-              placeholder: tr('compose.body_placeholder', 'Describe the issue in detail. Markdown is wikied.'),
-              oninput: (e: any) => {
-                this.body = e.target.value;
-              },
-              onkeydown: (e: any) => {
-                const isSubmit = (e.key === 'Enter' || e.keyCode === 13) && (e.ctrlKey || e.metaKey);
-                if (isSubmit && canSaveFallback) {
-                  e.preventDefault();
-                  this._submit();
-                }
-              },
-            }),
-            this.uploadError
-              ? m('div', { className: 'Alert Alert--danger LinkRobinsWiki-uploadAlert' }, this.uploadError)
-              : null,
-            this.uploadingCount > 0
-              ? m(
-                  'div',
-                  { className: 'LinkRobinsWiki-uploadStatus' },
-                  this.uploadingCount === 1
-                    ? tr('common.uploading_one', 'Uploading 1 file…')
-                    : tr('common.uploading_many', 'Uploading {count} files…', { count: this.uploadingCount })
-                )
-              : null,
-          ]),
-          m('div', { className: 'LinkRobinsWiki-form-actions' }, [
-            app.forum && app.forum.attribute('fof-upload.canUpload')
-              ? m('span', { className: 'LinkRobinsWiki-attachBtnWrap' }, [
-                  m(
-                    'button',
-                    {
-                      type: 'button',
-                      className: 'Button Button--default LinkRobinsWiki-attachBtn',
-                      disabled: this.saving || this.uploadingCount > 0,
-                      onclick: () => {
-                        if (this._composeFileInput) this._composeFileInput.click();
-                      },
-                    },
-                    [m('i', { className: 'fas fa-paperclip' }), ' ', tr('action.attach_files', 'Attach files')]
-                  ),
-                  m('input', {
-                    type: 'file',
-                    multiple: true,
-                    style: 'display:none;',
-                    disabled: this.saving || this.uploadingCount > 0,
-                    oncreate: (vnode: any) => {
-                      this._composeFileInput = vnode.dom;
-                    },
-                    onremove: () => {
-                      this._composeFileInput = null;
-                    },
-                    onchange: (e: any) => {
-                      const files = e.target.files;
-                      if (files && files.length) {
-                        this._uploadFiles(files);
-                      }
-                      try {
-                        e.target.value = '';
-                      } catch (err) {}
-                    },
-                  }),
-                ])
-              : null,
-            m(
-              'button',
-              {
-                type: 'button',
-                className: 'Button Button--primary',
-                disabled: !canSaveFallback,
-                onclick: () => {
-                  this._submit();
-                },
-              },
-              this.saving ? tr('compose.submitting', 'Submitting…') : tr('compose.submit', 'Submit ticket')
-            ),
-          ]),
-        ]),
-      ])
-    );
-  }
-
-  _renderComposeHeader() {
-    return m('header', { className: 'LinkRobinsWiki-header' }, [
-      this.categories.length > 1
-        ? m(
-            'button',
-            {
-              type: 'button',
-              className: 'Button Button--link LinkRobinsWiki-backBtn',
-              disabled: this.saving,
-              onclick: () => {
-                this._backToCategories();
-              },
-            },
-            [m('i', { className: 'fas fa-chevron-left' }), ' ', tr('compose.back_to_categories', 'Back to categories')]
-          )
-        : null,
-      m(
-        'h1',
-        { className: 'LinkRobinsWiki-title' },
-        isUserSuspended() ? tr('compose.title_appeal', 'File an appeal') : tr('compose.title', 'New wiki ticket')
-      ),
-      this._renderChosenCategory(),
-    ]);
-  }
-
-  // Open the docked composer to write the ticket. A single native "Submit
-  // ticket" action creates the ticket (subject lives on the page).
-  _openComposeComposer() {
-    const cat = this._chosenCategory();
-    openWikiComposer({
-      wikiContext: 'new-ticket',
-      className: 'LinkRobinsWiki-ticketComposer',
-      placeholder: tr('compose.body_placeholder', 'Describe the issue in detail. Markdown is wikied.'),
-      submitLabel: tr('compose.submit', 'Submit ticket'),
-      confirmExit: tr('compose.discard_confirm', 'You have an unsubmitted ticket. Discard it?'),
-      originalContent: this.body || '',
-      wikiHeaderItems: () => [
-        {
-          name: 'title',
-          content: m('h3', { className: 'LinkRobinsWiki-composerTitle' }, [
-            m('i', { className: (cat && cat.icon()) || 'fas fa-life-ring' }),
-            ' ',
-            this.subject || tr('compose.title', 'New wiki ticket'),
-            cat && cat.name()
-              ? m('span', { className: 'LinkRobinsWiki-composerTitle-cat' }, ' · ' + cat.name())
-              : null,
-          ]),
-        },
-      ],
-      onWikiSubmit: (content: string, body: any) => {
-        this._submit(content, body);
-      },
+    Promise.all(work).then(() => {
+      this.loading = false;
+      m.redraw();
     });
   }
 
-  // Step 1: clickable category cards (icon + name + description).
-  _renderPicker() {
-    const appeal = isUserSuspended();
-    return m('div', { className: 'LinkRobinsWiki-container' }, [
-      m('header', { className: 'LinkRobinsWiki-header LinkRobinsWiki-header--picker' }, [
-        m(
-          'h1',
-          { className: 'LinkRobinsWiki-title' },
-          appeal ? tr('compose.title_appeal', 'File an appeal') : tr('compose.title', 'New wiki ticket')
-        ),
-        m(
-          'p',
-          { className: 'LinkRobinsWiki-pickerHint' },
-          appeal
-            ? tr('compose.choose_category_appeal', 'Choose an appeal category to get started.')
-            : tr('compose.choose_category', 'Choose a category to get started.')
-        ),
-      ]),
-      m(
-        'ul',
-        { className: 'LinkRobinsWiki-categoryCards' },
-        this.categories.map((c: any) => {
-          const color = c.color() || null;
-          return m(
-            'li',
-            { className: 'LinkRobinsWiki-categoryCards-item' },
+  view() {
+    if (this.loading) {
+      return m('div', { className: 'LinkRobinsWiki-page LinkRobinsWiki-compose' }, m(LoadingIndicator));
+    }
+    if (this.loadError) {
+      return m(
+        'div',
+        { className: 'LinkRobinsWiki-page LinkRobinsWiki-compose' },
+        m('div', { className: 'LinkRobinsWiki-empty' }, tr('errors.load_article', 'Could not load this article.'))
+      );
+    }
+
+    const categoryOptions: Record<string, string> = { '': tr('compose.no_category', 'No category') };
+    this.categories.forEach((cat: any) => {
+      categoryOptions[String(cat.id())] = cat.name();
+    });
+
+    return m('div', { className: 'LinkRobinsWiki-page LinkRobinsWiki-compose' }, [
+      m('div', { className: 'LinkRobinsWiki-container' }, [
+        m('header', { className: 'LinkRobinsWiki-header' }, [
+          m('h1', { className: 'LinkRobinsWiki-title' }, this.editing ? tr('compose.title_edit', 'Edit article') : tr('compose.title', 'New article')),
+        ]),
+
+        m('form', { className: 'LinkRobinsWiki-form', onsubmit: (e: any) => { e.preventDefault(); this._save(); } }, [
+          m('div', { className: 'Form-group' }, [
+            m('label', tr('compose.title_label', 'Title')),
+            m('input', {
+              className: 'FormControl',
+              value: this.title,
+              placeholder: tr('compose.title_placeholder', 'Article title'),
+              oninput: (e: any) => { this.title = e.target.value; },
+            }),
+          ]),
+
+          this.categories.length
+            ? m('div', { className: 'Form-group' }, [
+                m('label', tr('compose.category_label', 'Category')),
+                m(Select, {
+                  options: categoryOptions,
+                  value: this.categoryId,
+                  onchange: (v: string) => { this.categoryId = v; },
+                }),
+              ])
+            : null,
+
+          m('div', { className: 'Form-group' }, [
+            m('label', tr('compose.body_label', 'Content')),
+            m(TextEditor, {
+              value: this.body,
+              disabled: this.saving,
+              placeholder: tr('compose.body_placeholder', 'Write the article. Markdown is supported.'),
+              onchange: (v: string) => { this.body = v; },
+              onsubmit: () => this._save(),
+            }),
+          ]),
+
+          m('div', { className: 'Form-group LinkRobinsWiki-formActions' }, [
             m(
-              'button',
+              Button,
+              {
+                type: 'submit',
+                className: 'Button Button--primary',
+                loading: this.saving,
+                disabled: this.saving,
+              },
+              this.editing ? tr('compose.submit_update', 'Save changes') : tr('compose.submit_create', 'Publish article')
+            ),
+            m(
+              Button,
               {
                 type: 'button',
-                className: 'LinkRobinsWiki-categoryCard',
-                onclick: () => {
-                  this._chooseCategory(String(c.id()));
-                },
+                className: 'Button',
+                onclick: () => this._cancel(),
               },
-              [
-                m(
-                  'span',
-                  { className: 'LinkRobinsWiki-categoryCard-icon', style: color ? 'color:' + color : null },
-                  m('i', { className: c.icon() || 'fas fa-life-ring' })
-                ),
-                m('span', { className: 'LinkRobinsWiki-categoryCard-text' }, [
-                  m('span', { className: 'LinkRobinsWiki-categoryCard-name' }, c.name() || ''),
-                  c.description()
-                    ? m('span', { className: 'LinkRobinsWiki-categoryCard-desc' }, c.description())
-                    : null,
-                ]),
-              ]
-            )
-          );
-        })
-      ),
+              tr('action.cancel', 'Cancel')
+            ),
+          ]),
+        ]),
+      ]),
     ]);
   }
 
-  // The selected-category chip shown in the form header (step 2).
-  _renderChosenCategory() {
-    const c = this._chosenCategory();
-    if (!c) return null;
-    const color = c.color() || null;
-    return m('div', { className: 'LinkRobinsWiki-chosenCategory' }, [
-      c.icon()
-        ? m('i', {
-            className: c.icon() + ' LinkRobinsWiki-chosenCategory-icon',
-            style: color ? 'color:' + color : null,
-          })
-        : null,
-      m('span', { className: 'LinkRobinsWiki-chosenCategory-name' }, c.name() || ''),
-    ]);
-  }
+  _save() {
+    if (this.saving) return;
 
-  _chosenCategory() {
-    const id = String(this.categoryId);
-    for (let i = 0; i < this.categories.length; i++) {
-      if (String(this.categories[i].id()) === id) return this.categories[i];
-    }
-    return null;
-  }
-
-  _chooseCategory(id: string) {
-    this.categoryId = id;
-    this.error = null;
-    m.redraw();
-  }
-
-  _backToCategories() {
-    this.categoryId = '';
-    this.error = null;
-    // Close the docked composer if it's open for this draft.
-    try {
-      if (wikiComposerOpenFor('new-ticket') && app.composer && app.composer.close) {
-        app.composer.close();
-      }
-    } catch (e) {}
-    m.redraw();
-  }
-
-  _errorMessage() {
-    const err = this.error;
-    if (!err) return tr('errors.unknown', 'Unknown error.');
-    try {
-      const errors = err.response && err.response.errors;
-      if (errors && errors[0]) {
-        return errors[0].detail || errors[0].title || tr('errors.submit', 'Could not submit.');
-      }
-    } catch (e) {}
-    return tr('errors.submit_ticket', 'Could not submit the ticket.');
-  }
-
-  // Create the ticket. Called from the docked composer with (content, body),
-  // or from the fallback page button with no args (it reads this.body).
-  _submit(content?: string, body?: any) {
-    const bodyText = typeof content === 'string' ? content : this.body;
-    const category = this._chosenCategory();
-
-    if (this.subject.trim() === '' || this.categoryId === '' || !category) {
-      showError(tr('compose.subject_first', 'Enter a subject first, then write your message.'));
+    const title = (this.title || '').trim();
+    const body = (this.body || '').trim();
+    if (!title) {
+      showError(tr('errors.title_required', 'Please enter a title.'));
       return;
     }
-    if (!bodyText || bodyText.trim() === '') {
-      showError(tr('errors.empty_body', 'Please write your message before submitting.'));
+    if (!body) {
+      showError(tr('errors.empty_body', 'Please write the article body before submitting.'));
       return;
     }
+
+    const category = this.categoryId
+      ? app.store.getById('linkrobins-wiki-categories', this.categoryId) || null
+      : null;
 
     this.saving = true;
-    this.error = null;
-    if (body) body.loading = true;
     m.redraw();
 
-    createTicket(this.subject.trim(), category, bodyText)
-      .then((ticket: any) => {
-        this.saving = false;
-        this.body = '';
-        if (body && body.composer) body.composer.hide();
-        if (ticket && ticket.id()) {
-          m.route.set(BASE_PATH + '/' + encodeURIComponent(ticket.id()));
-        } else {
-          m.route.set(BASE_PATH);
-        }
-      })
-      .catch((err: any) => {
-        this.saving = false;
-        if (body) body.loading = false;
-        this.error = err;
-        console.error('[linkrobins/wiki] submit failed:', err);
-        m.redraw();
-      });
+    const done = (article: any) => {
+      this.saving = false;
+      m.route.set(basePath() + BASE_PATH + '/' + encodeURIComponent(article.id()));
+    };
+    const fail = (err: any) => {
+      this.saving = false;
+      showError(tr('errors.submit', 'Could not save the article.'));
+      console.error('[linkrobins/wiki] save failed:', err);
+      m.redraw();
+    };
+
+    if (this.editing && this.article) {
+      updateArticle(this.article, { title, content: body, relationships: { category } }).then(done).catch(fail);
+    } else {
+      createArticle(title, body, category).then(done).catch(fail);
+    }
   }
 
-  _uploadFiles(files: FileList) {
-    return uploadFilesToBody(this, files, 'body', () => this._composeComposer && this._composeComposer.editor);
+  _cancel() {
+    if (this.editing && this.article) {
+      m.route.set(basePath() + BASE_PATH + '/' + encodeURIComponent(this.article.id()));
+    } else {
+      m.route.set(basePath() + BASE_PATH);
+    }
   }
 }

@@ -1,234 +1,87 @@
 linkrobins-wiki:
   admin:
-    nav:
-      categories: Categories
-      appeal_bans: 'Appeal bans'
-      rate_limits: 'Rate limits'
-    common:
-      loading: Loading…
-      unknown_error: 'Something went wrong. Please try again.'
     permissions:
-      handle_tickets: 'Handle wiki tickets'
-      manage_appeal_bans: 'Manage wiki appeal-bans'
-      force_delete_tickets: 'Permanently delete wiki tickets'
+      create_article: 'Create wiki articles'
+      edit_articles: 'Edit and moderate any wiki article'
     categories:
       heading: 'Wiki categories'
-      intro: 'Create and organize the categories users choose from when opening a wiki ticket.'
+      intro: 'Create and organize the categories articles can be filed under.'
       new_button: 'New category'
       edit_button: Edit
       delete_button: Delete
       empty: 'No categories yet. Create one to get started.'
       column_name: Name
       column_slug: Slug
-      column_type: Type
-      column_tickets: Tickets
-      general_badge: General
-      appeal_badge: Appeal
-      this_category: 'this category'
-      delete_confirm_named: "Delete the category “{name}”? This can't be undone."
-      delete_confirm_with_tickets: 'This category still has {count} ticket(s). Deleting it will also delete those tickets. Continue?'
+      column_articles: Articles
+      delete_confirm_named: "Delete the category “{name}”? Articles in it will become uncategorized."
     category_editor:
       title_new: 'New category'
       title_edit: 'Edit category'
       field_name: Name
       field_slug: Slug
       field_slug_help: "Used in the category's URL. Leave blank to generate it from the name."
-      field_slug_placeholder: 'e.g. billing'
+      field_slug_placeholder: 'e.g. guides'
       field_description: Description
       field_color: Color
       field_color_help: "Hex color (e.g. #3b82f6) used for the category's badge."
       field_icon: Icon
-      field_icon_help: 'A Font Awesome class, e.g. fas fa-life-ring.'
+      field_icon_help: 'A Font Awesome class, e.g. fas fa-book.'
       field_position: Position
       field_position_help: 'Categories are ordered by this value, lowest first.'
-      field_is_appeal: 'Appeal category'
-      field_is_appeal_help: 'Tickets opened in this category are treated as ban appeals.'
       submit_create: 'Create category'
       submit_update: 'Save changes'
-      error_load: "Couldn't load this category."
       error_save: "Couldn't save the category. Please check the fields and try again."
       error_delete: "Couldn't delete the category."
-    appeal_bans:
-      heading_alt: 'Appeal bans'
-      intro: 'Control which users are blocked from filing ban appeals.'
-      banned_heading: 'Appeal-banned users'
-      banned_empty: 'No users are currently banned from filing appeals.'
-      column_username: Username
-      column_email: Email
-      load_more: 'Load more'
-      view_banned_button: 'View appeal-banned users'
-    rate_limits:
-      heading: 'Rate limits'
-      intro: 'Limit how often users can open wiki tickets and ban appeals.'
-      max_general_per_window: 'Max general tickets per window'
-      max_general_per_window_help: 'How many general wiki tickets a user may open within the window below.'
-      general_window_hours: 'General window (hours)'
-      general_window_hours_help: 'The rolling time window, in hours, for the general ticket limit.'
-      max_appeals_per_window: 'Max appeals per window'
-      max_appeals_per_window_help: 'How many ban-appeal tickets a user may open within the appeal window.'
-      appeal_window_days: 'Appeal window (days)'
-      appeal_window_days_help: 'The rolling time window, in days, for the appeal limit.'
-      max_concurrent_appeals: 'Max concurrent open appeals'
-      max_concurrent_appeals_help: 'How many appeal tickets a user may have open at the same time.'
-      error_save: "Couldn't save the rate limits."
   forum:
     nav: Wiki
-    new_ticket: 'New ticket'
-    submit_ticket: 'Submit ticket'
     common:
-      loading: 'Loading…'
-      uploading_one: 'Uploading 1 file…'
-      uploading_many: 'Uploading {count} files…'
       date_at_time: '{date} at {time}'
-    notifications:
-      someone: 'A user'
-      reply_from: '{name} replied to your ticket'
-      reply_generic: 'Wiki replied to your ticket'
-      new_ticket: '{name} opened a new wiki ticket'
-      new_appeal: '{name} opened a new appeal'
-    settings:
-      notify_new_reply_label: 'Someone replies to my wiki ticket'
-      notify_new_ticket_label: 'A new wiki ticket is opened (staff)'
-    status:
-      in_progress: 'In progress'
-      awaiting_response: 'Awaiting response'
-      open: 'Open'
-      resolved: 'Resolved'
-      closed: 'Closed'
     index:
-      my_tickets: 'My tickets'
-      filter_all: 'All'
-      new_ticket: 'New ticket'
-      new_ticket_tooltip: 'Open a new wiki ticket'
-      empty_own: 'No tickets yet. Click "New ticket" to open one.'
-      empty: 'No tickets to show.'
+      new_article: 'New article'
+      new_article_tooltip: 'Write a new article'
+      all_articles: 'All articles'
+      empty_own: 'No articles yet. Click "New article" to write one.'
+      empty: 'No articles to show.'
       untitled: 'Untitled'
       deleted_badge: 'Deleted'
-    errors:
-      load_tickets: 'Could not load tickets.'
-      unknown: 'Unknown error.'
-      submit: 'Could not submit.'
-      submit_ticket: 'Could not submit the ticket.'
-      upload: 'Could not upload file.'
-      upload_no_files: 'Upload returned no files. Please try again.'
-      load_ticket: 'Could not load this ticket. It may have been deleted, or you may not have permission to view it.'
-      update_assignment: 'Could not update assignment.'
-      update_status: 'Could not update status.'
-      update_decision: 'Could not update the appeal decision.'
-      save_edit: 'Could not save the edit.'
-      delete_reply: 'Could not delete the reply.'
-      restore_reply: 'Could not restore the reply.'
-      delete_reply_forever: 'Could not permanently delete the reply.'
-      delete_ticket: 'Could not delete the ticket.'
-      restore_ticket: 'Could not restore the ticket.'
-      delete_ticket_forever: 'Could not permanently delete the ticket.'
-      post_reply: 'Could not post reply.'
-      empty_body: 'Please write your message before submitting.'
     compose:
-      appeal_banned: 'You are not permitted to file appeals. Please contact the site owner via another channel.'
-      no_appeal_categories: 'No appeal categories are currently available.'
-      no_categories: 'No wiki categories have been set up yet. Please contact an admin.'
-      title_appeal: 'File an appeal'
-      title: 'New wiki ticket'
-      choose_category: 'Choose a category to get started.'
-      choose_category_appeal: 'Choose an appeal category to get started.'
-      back_to_categories: 'Back to categories'
-      subject_label: 'Subject'
-      message_label: 'Message'
-      submitting: 'Submitting…'
-      subject_placeholder: 'Short summary of your issue'
-      body_placeholder: 'Describe the issue in detail. Markdown is wikied.'
-      submit: 'Submit ticket'
-      subject_first: 'Please enter a subject for your ticket.'
-      discard_confirm: 'You have an unsubmitted ticket. Discard it?'
-      message_placeholder_click: 'Click to write your message…'
+      title: 'New article'
+      title_edit: 'Edit article'
+      title_label: 'Title'
+      title_placeholder: 'Article title'
+      category_label: 'Category'
+      no_category: 'No category'
+      body_label: 'Content'
+      body_placeholder: 'Write the article. Markdown is supported.'
+      submit_create: 'Publish article'
+      submit_update: 'Save changes'
     show:
-      title: 'Ticket'
-      closed_notice: 'This ticket has been closed and cannot be replied to.'
-      cannot_reply: 'You cannot reply to this ticket.'
-      closed_badge: 'Closed ticket'
-      opened_by: 'Opened by'
-      assigned_to: 'Assigned to'
-      unassigned: Unassigned
-      decision: 'Decision:'
-      deleted_badge: 'Deleted'
-    decision:
-      pending: 'Pending'
-      accepted: 'Accepted'
-      rejected: 'Rejected'
-    staff:
-      set_status: 'Set status:'
-      set_decision: 'Appeal decision:'
-    reply:
-      deleted_notice: 'This reply was deleted.'
-      mod_actions: 'Moderation actions'
-      internal_placeholder: 'Internal note (only staff will see this)…'
-      internal_note: 'Internal note'
-      post_reply: 'Post reply'
-      posting: 'Posting…'
-      discard_confirm: 'You have unsaved changes. Discard them?'
-      placeholder: 'Write a reply…'
-      edited_by: 'Edited by {name} on {date}'
-      edited_at: 'Edited on {date}'
-      edited_marker: '(edited)'
+      deleted_notice: 'This article is deleted. Only editors can see it.'
+      by: 'By '
+      last_edited: 'Last edited by '
+      history: 'History ({count})'
+      no_history: 'No revisions yet.'
     action:
-      back: 'Back'
-      delete_forever: 'Delete forever'
-      save_changes: 'Save changes'
-      saving: 'Saving…'
-      edit_reply: 'Edit reply'
-      attach_files: 'Attach files'
-      claim: 'Claim'
-      unassign: 'Unassign'
       edit: 'Edit'
       delete: 'Delete'
       restore: 'Restore'
+      delete_forever: 'Delete forever'
       cancel: 'Cancel'
     confirm:
-      delete_reply_forever: 'Permanently delete this reply? This cannot be undone.'
-      soft_delete_reply: 'Soft-delete this reply? Staff can restore it later.'
-      soft_delete_ticket: 'Soft-delete this ticket? It will be hidden from the index and from the ticket owner; staff can restore it.'
-      delete_ticket_forever: 'Permanently delete this ticket and all its replies? This cannot be undone.'
-    ticket:
-      delete: 'Delete ticket'
-      restore: 'Restore ticket'
-      mod_actions: 'Ticket moderation actions'
-    user_controls:
-      allow_appeals: 'Allow wiki appeals'
-      disallow_appeals: 'Disallow wiki appeals'
-      toggle_failed: 'Could not update the appeal-ban status.'
-  email:
-    new_reply_subject: '[Wiki] New reply on: {subject}'
-    new_ticket_subject: '[Wiki] New ticket: {subject}'
-    new_appeal_subject: '[Wiki / Appeal] New ticket: {subject}'
-    fallback_ticket: 'your wiki ticket'
-    from_wiki: 'Wiki'
-    from_a_user: 'a user'
-    new_reply_body: '{name} replied to your wiki ticket:'
-    view_ticket: 'View the ticket'
-    ticket_type_appeal: 'appeal ticket'
-    ticket_type_general: 'wiki ticket'
-    new_ticket_body: 'A new {type} was just opened by {name}:'
-    open_ticket: 'Open the ticket'
-  # Server-resolved messages (API error details + rate-limit reasons). Only
-  # used backend-side, so they live outside the forum/admin namespaces.
+      soft_delete: 'Delete this article? Editors can restore it later.'
+      delete_forever: 'Permanently delete this article and its history? This cannot be undone.'
+    errors:
+      load_articles: 'Could not load articles.'
+      load_article: 'Could not load this article. It may have been deleted, or you may not have permission to view it.'
+      title_required: 'Please enter a title.'
+      empty_body: 'Please write the article body before submitting.'
+      submit: 'Could not save the article.'
+      delete_article: 'Could not delete the article.'
+      restore_article: 'Could not restore the article.'
+      delete_article_forever: 'Could not permanently delete the article.'
+      upload: 'Could not upload file.'
+      upload_no_files: 'Upload returned no files. Please try again.'
+      unknown: 'Unknown error.'
   api:
-    assign_staff_only: 'Tickets can only be assigned to wiki staff.'
-    category_required: 'A category is required.'
-    ticket_soft_delete_first: 'A ticket must be soft-deleted before it can be permanently removed.'
-    login_required_reply: 'You must be logged in to reply.'
-    reply_content_required: 'Reply content is required.'
-    ticket_required: 'A ticket is required.'
-    ticket_not_found: 'Ticket not found.'
-    cannot_reply: 'You cannot reply to this ticket.'
-    login_required_edit: 'You must be logged in to edit a reply.'
-    no_permission_edit: 'You do not have permission to edit replies.'
-    login_required: 'You must be logged in.'
-    no_permission_delete: 'You do not have permission to delete replies.'
-    reply_soft_delete_first: 'A reply must be soft-deleted before it can be permanently removed.'
-    rate_limit:
-      appeal_banned: 'You are not permitted to file appeals.'
-      appeal_has_open: 'You already have an open appeal. Please wait for it to be resolved before filing another.'
-      appeal_quota: 'You have already filed {count} appeal(s) in the past {days} days (limit: {limit}). Try again later.'
-      general_quota: 'You have filed {count} tickets in the past {hours} hours (limit: {limit}). Please wait before filing another.'
-      generic: 'Cannot create a ticket right now.'
+    content_required: 'Article content is required.'
+    article_soft_delete_first: 'An article must be deleted before it can be permanently removed.'

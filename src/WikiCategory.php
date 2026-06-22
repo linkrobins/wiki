@@ -18,16 +18,14 @@ class WikiCategory extends AbstractModel
         'color',
         'icon',
         'position',
-        'is_appeal',
     ];
 
     protected $casts = [
-        'position'  => 'integer',
-        'is_appeal' => 'boolean',
+        'position' => 'integer',
     ];
 
-    public function tickets(): HasMany
+    public function articles(): HasMany
     {
-        return $this->hasMany(WikiTicket::class, 'category_id');
+        return $this->hasMany(WikiArticle::class, 'category_id');
     }
 }

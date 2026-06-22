@@ -8,8 +8,7 @@ use Flarum\Search\SearchState;
 use Flarum\Search\ValidateFilterTrait;
 
 /**
- * Narrows a ticket listing to a single category. Useful for staff
- * filtering "all the appeals" or "all the bug reports".
+ * `filter[categoryId]=N` narrows an article listing to a single category.
  *
  * @implements FilterInterface<DatabaseSearchState>
  */
@@ -29,7 +28,7 @@ class CategoryIdFilter implements FilterInterface
             return;
         }
         $state->getQuery()->whereIn(
-            'linkrobins_wiki_tickets.category_id',
+            'linkrobins_wiki_articles.category_id',
             $ids,
             'and',
             $negate

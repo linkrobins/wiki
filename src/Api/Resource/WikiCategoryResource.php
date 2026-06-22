@@ -2,7 +2,6 @@
 
 namespace LinkRobins\Wiki\Api\Resource;
 
-use Flarum\Api\Context as FlarumContext;
 use Flarum\Api\Endpoint;
 use Flarum\Api\Resource\AbstractDatabaseResource;
 use Flarum\Api\Schema;
@@ -26,9 +25,9 @@ class WikiCategoryResource extends AbstractDatabaseResource
 
     public function scope(Builder $query, Context $context): void
     {
-        // Eager-load the ticket count so the ticketCount field doesn't issue a
-        // COUNT() per category (N+1 on the category list).
-        $query->withCount('tickets')->orderBy('position')->orderBy('id');
+        // Eager-load the article count so the articleCount field doesn't issue
+        // a COUNT() per category (N+1 on the category list).
+        $query->withCount('articles')->orderBy('position')->orderBy('id');
     }
 
     public function find(string $id, Context $context): ?object
@@ -119,8 +118,8 @@ class WikiCategoryResource extends AbstractDatabaseResource
                         $cat->icon = null;
                         return;
                     }
-                    // Restrict to safe FA-class shapes. We interpolate this
-                    // into class="" attributes in the UI, so anything outside
+                    // Restrict to safe FA-class shapes. We interpolate this into
+                    // class="" attributes in the UI, so anything outside
                     // letters/digits/spaces/dashes is unsafe.
                     if (! preg_match('/^[a-z0-9 \-]+$/', $trimmed)) {
                         return;
@@ -131,12 +130,8 @@ class WikiCategoryResource extends AbstractDatabaseResource
             Schema\Integer::make('position')
                 ->writable(),
 
-            Schema\Boolean::make('isAppeal')
-                ->property('is_appeal')
-                ->writable(),
-
-            Schema\Integer::make('ticketCount')
-                ->get(fn (WikiCategory $cat) => (int) ($cat->tickets_count ?? $cat->tickets()->count())),
+            Schema\Integer::make('articleCount')
+                ->get(fn (WikiCategory $cat) => (int) ($cat->articles_count ?? $cat->articles()->count())),
 
             Schema\DateTime::make('createdAt')
                 ->property('created_at'),
