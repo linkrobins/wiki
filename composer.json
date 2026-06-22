@@ -1,0 +1,41 @@
+{
+    "name": "linkrobins/wiki",
+    "description": "Wiki extension for Flarum.",
+    "type": "flarum-extension",
+    "license": "MIT",
+    "keywords": ["flarum", "wiki", "knowledge-base", "documentation"],
+    "homepage": "https://linkrobins.com",
+    "support": {
+        "issues": "https://linkrobins.com/wiki",
+        "source": "https://linkrobins.com"
+    },
+    "authors": [
+        {
+            "name": "Karl Bullock",
+            "email": "karl@linkrobins.com"
+        }
+    ],
+    "require": {
+        "php": "^8.3",
+        "flarum/core": "^2.0"
+    },
+    "suggest": {
+        "fof/upload": "For file attachments. The wiki extension automatically renders an 'Attach files' button when this is installed."
+    },
+    "autoload": {
+        "psr-4": {
+            "LinkRobins\\Wiki\\": "src/"
+        }
+    },
+    "extra": {
+        "flarum-extension": {
+            "title": "Link Robins Wiki",
+            "category": "feature",
+            "icon": {
+                "name": "fas fa-book",
+                "color": "#07adcc",
+                "backgroundColor": "#1a2535"
+            }
+        }
+    }
+}

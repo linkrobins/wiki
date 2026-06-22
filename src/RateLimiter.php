@@ -1,0 +1,207 @@
+<?php
+
+namespace LinkRobins\Wiki;
+
+use Carbon\Carbon;
+use Flarum\Locale\TranslatorInterface;
+use Flarum\Settings\SettingsRepositoryInterface;
+use Flarum\User\User;
+
+/**
+ * Centralizes ticket-creation rate limits so the rules live in one place
+ * and the controller stays slim.
+ *
+ * Defaults (overrideable via settings):
+ *
+ *   linkrobins-wiki.appeal_limit_per_window     = 3
+ *   linkrobins-wiki.appeal_window_days          = 30
+ *   linkrobins-wiki.appeal_max_concurrent_open  = 1
+ *   linkrobins-wiki.general_limit_per_window    = 10
+ *   linkrobins-wiki.general_window_hours        = 24
+ *
+ * Returns a structured reason on rejection so the controller can format
+ * a useful error message for the user.
+ */
+class RateLimiter
+{
+    public function __construct(
+        protected SettingsRepositoryInterface $settings,
+        protected TranslatorInterface $translator,
+    ) {
+    }
+
+    public const REASON_OK                = 'ok';
+    public const REASON_APPEAL_BANNED     = 'appeal_banned';
+    public const REASON_APPEAL_QUOTA      = 'appeal_quota_exceeded';
+    public const REASON_APPEAL_HAS_OPEN   = 'appeal_already_open';
+    public const REASON_GENERAL_QUOTA     = 'general_quota_exceeded';
+
+    /**
+     * Returns ['ok' => bool, 'reason' => string, 'meta' => array]. `meta`
+     * contains the relevant numbers (limit, window, time-to-next-allowed)
+     * for the rejection message.
+     */
+    public function check(User $actor, WikiCategory $category): array
+    {
+        if ($category->is_appeal) {
+            return $this->checkAppeal($actor, $category);
+        }
+        return $this->checkGeneral($actor, $category);
+    }
+
+    protected function checkAppeal(User $actor, WikiCategory $category): array
+    {
+        // Permanent appeal-ban: hard stop, no window.
+        if ((bool) $actor->getAttribute('wiki_appeal_banned')) {
+            return $this->fail(self::REASON_APPEAL_BANNED, []);
+        }
+
+        $maxConcurrent = (int) $this->settings->get(
+            'linkrobins-wiki.appeal_max_concurrent_open',
+            1
+        );
+        if ($maxConcurrent > 0) {
+            $openAppealCount = $this->countOpenAppealsForUser($actor);
+
+            if ($openAppealCount >= $maxConcurrent) {
+                return $this->fail(self::REASON_APPEAL_HAS_OPEN, [
+                    'open' => $openAppealCount,
+                    'max'  => $maxConcurrent,
+                ]);
+            }
+        }
+
+        $limit  = (int) $this->settings->get('linkrobins-wiki.appeal_limit_per_window', 3);
+        $days   = (int) $this->settings->get('linkrobins-wiki.appeal_window_days', 30);
+        if ($limit > 0 && $days > 0) {
+            $since = Carbon::now()->subDays($days);
+            $count = $this->countAppealsForUserSince($actor, $since);
+
+            if ($count >= $limit) {
+                return $this->fail(self::REASON_APPEAL_QUOTA, [
+                    'count' => $count,
+                    'limit' => $limit,
+                    'days'  => $days,
+                ]);
+            }
+        }
+
+        return $this->ok();
+    }
+
+    protected function checkGeneral(User $actor, WikiCategory $category): array
+    {
+        $limit = (int) $this->settings->get('linkrobins-wiki.general_limit_per_window', 10);
+        $hours = (int) $this->settings->get('linkrobins-wiki.general_window_hours', 24);
+        if ($limit <= 0 || $hours <= 0) {
+            return $this->ok();
+        }
+
+        $since = Carbon::now()->subHours($hours);
+        $count = $this->countGeneralTicketsForUserSince($actor, $since);
+
+        if ($count >= $limit) {
+            return $this->fail(self::REASON_GENERAL_QUOTA, [
+                'count' => $count,
+                'limit' => $limit,
+                'hours' => $hours,
+            ]);
+        }
+
+        return $this->ok();
+    }
+
+    protected function ok(): array
+    {
+        return ['ok' => true, 'reason' => self::REASON_OK, 'meta' => []];
+    }
+
+    protected function fail(string $reason, array $meta): array
+    {
+        return ['ok' => false, 'reason' => $reason, 'meta' => $meta];
+    }
+
+    /**
+     * Human-readable explanation matching a check() result. Keeps the
+     * error-string concerns in one place so controllers don't duplicate
+     * the wording.
+     */
+    public function describe(array $result): string
+    {
+        if (! empty($result['ok'])) {
+            return '';
+        }
+        $meta = $result['meta'] ?? [];
+        switch ($result['reason'] ?? '') {
+            case self::REASON_APPEAL_BANNED:
+                return $this->translator->trans('linkrobins-wiki.api.rate_limit.appeal_banned');
+            case self::REASON_APPEAL_HAS_OPEN:
+                return $this->translator->trans('linkrobins-wiki.api.rate_limit.appeal_has_open');
+            case self::REASON_APPEAL_QUOTA:
+                return $this->translator->trans('linkrobins-wiki.api.rate_limit.appeal_quota', [
+                    'count' => $meta['count'] ?? 0,
+                    'days'  => $meta['days']  ?? 0,
+                    'limit' => $meta['limit'] ?? 0,
+                ]);
+            case self::REASON_GENERAL_QUOTA:
+                return $this->translator->trans('linkrobins-wiki.api.rate_limit.general_quota', [
+                    'count' => $meta['count'] ?? 0,
+                    'hours' => $meta['hours'] ?? 0,
+                    'limit' => $meta['limit'] ?? 0,
+                ]);
+        }
+        return $this->translator->trans('linkrobins-wiki.api.rate_limit.generic');
+    }
+
+    // --- DB query methods, extracted so tests can override -------------
+    //
+    // These intentionally do exactly one thing each (a single count query)
+    // so test subclasses can stub them with hardcoded return values without
+    // having to spin up Eloquent.
+    //
+    // Note on soft-deleted tickets: WikiTicket uses the SoftDeletes trait.
+    // The "currently open" count below deliberately EXCLUDES trashed rows --
+    // a soft-deleted appeal isn't really open, so it shouldn't keep blocking
+    // the user. The two per-window VOLUME counts, however, use ->withTrashed()
+    // so that soft-deleting a ticket can't refund the user's quota: otherwise
+    // "file → get it soft-deleted → refile" would defeat the volume throttle.
+
+    protected function countOpenAppealsForUser(User $actor): int
+    {
+        return WikiTicket::query()
+            ->where('user_id', $actor->id)
+            ->whereHas('category', function ($q) {
+                $q->where('is_appeal', true);
+            })
+            ->whereIn('status', [
+                WikiTicket::STATUS_OPEN,
+                WikiTicket::STATUS_IN_PROGRESS,
+                WikiTicket::STATUS_AWAITING_USER,
+            ])
+            ->count();
+    }
+
+    protected function countAppealsForUserSince(User $actor, Carbon $since): int
+    {
+        return WikiTicket::query()
+            ->withTrashed()
+            ->where('user_id', $actor->id)
+            ->whereHas('category', function ($q) {
+                $q->where('is_appeal', true);
+            })
+            ->where('created_at', '>=', $since)
+            ->count();
+    }
+
+    protected function countGeneralTicketsForUserSince(User $actor, Carbon $since): int
+    {
+        return WikiTicket::query()
+            ->withTrashed()
+            ->where('user_id', $actor->id)
+            ->whereHas('category', function ($q) {
+                $q->where('is_appeal', false);
+            })
+            ->where('created_at', '>=', $since)
+            ->count();
+    }
+}

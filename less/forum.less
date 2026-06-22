@@ -1,0 +1,715 @@
+
+
+// --- Header ----------------------------------------------------------
+
+.LinkRobinsWiki-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+    margin-bottom: 24px;
+
+    > h1, > .LinkRobinsWiki-title {
+        flex: 1;
+    }
+}
+
+// ---- Docked composer ------------------------------------------------------
+// Replies, edits and new tickets are written in Flarum's real docked composer
+// (app.composer), so the editor + every editor extension (FoF Rich Text, FoF
+// Upload, Mentions, Emoji) get their native styling and behaviour for free.
+// We only style our own header rows shown above the editor.
+.LinkRobinsWiki-composerTitle {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 600;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+
+    i {
+        color: var(--primary-color, #07adcc);
+    }
+}
+
+.LinkRobinsWiki-composerTitle-cat {
+    font-weight: 400;
+    color: var(--muted-color, #888);
+}
+
+// Discussion-style reply placeholder ("click to write…" + live preview) reused
+// for ticket replies and the new-ticket message. Core styles .Post /
+// .ReplyPlaceholder; outside a PostStream the .ReplyPlaceholder <button> shrinks
+// to its content, so we force it (and the live-preview article) to fill the
+// width of wherever it sits.
+.LinkRobinsWiki-replyPrompt,
+.LinkRobinsWiki-composePreview {
+    display: block;
+    width: 100%;
+
+    .ReplyPlaceholder,
+    .Post {
+        display: block;
+        width: 100%;
+        margin: 0;
+        box-sizing: border-box;
+    }
+}
+
+// Our composer header rows (ticket title + internal-note toggle) should each
+// sit on their own line. Core lays header <li>s out `inline-block` with a
+// negative right margin (designed for the discussion title input + tag chips),
+// which makes our wider ticket title overlap the internal-note checkbox on
+// desktop. Scope the override to our composers so core's stays intact.
+.LinkRobinsWiki-replyComposer,
+.LinkRobinsWiki-ticketComposer {
+    .ComposerBody-header > li {
+        display: block;
+        margin-right: 0;
+    }
+}
+
+.ComposerBody-header .LinkRobinsWiki-internalToggle {
+    margin: 4px 0 0;
+}
+
+// "Write a reply" prompt button at the foot of a ticket.
+.LinkRobinsWiki-replyPrompt {
+    margin-top: 8px;
+}
+
+.LinkRobinsWiki-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+
+    i {
+        color: var(--primary-color, #07adcc);
+    }
+}
+
+// --- Status badges --------------------------------------------------
+
+.LinkRobinsWiki-status {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    white-space: nowrap;
+
+    &.is-open {
+        background: rgba(7, 173, 204, 0.15);
+        color: #07adcc;
+    }
+    &.is-progress {
+        background: rgba(243, 156, 18, 0.15);
+        color: #f39c12;
+    }
+    &.is-awaiting {
+        background: rgba(155, 89, 182, 0.15);
+        color: #9b59b6;
+    }
+    &.is-resolved {
+        background: rgba(46, 204, 113, 0.15);
+        color: #27ae60;
+    }
+    &.is-closed {
+        background: rgba(127, 140, 141, 0.15);
+        color: #7f8c8d;
+    }
+}
+
+// --- Sidebar --------------------------------------------------------
+
+.LinkRobinsWiki-newTicketButton {
+    width: 100%;
+}
+
+// --- List -----------------------------------------------------------
+
+.LinkRobinsWiki-list {
+    display: flex;
+    flex-direction: column;
+    border: 1px solid var(--control-bg, rgba(0,0,0,0.08));
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.LinkRobinsWiki-row {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 14px 18px;
+    border-bottom: 1px solid var(--control-bg, rgba(0,0,0,0.06));
+    text-decoration: none;
+    color: inherit;
+    transition: background 0.12s;
+
+    &:hover {
+        background: var(--control-bg, rgba(0,0,0,0.03));
+        text-decoration: none;
+    }
+
+    &:last-child {
+        border-bottom: 0;
+    }
+}
+
+// Soft-deleted tickets stay in the staff list (until they're permanently
+// removed) but are dimmed and struck through so they read as "trashed".
+.LinkRobinsWiki-row--deleted {
+    opacity: 0.6;
+
+    .LinkRobinsWiki-row-subject {
+        text-decoration: line-through;
+        text-decoration-color: var(--muted-color, #888);
+    }
+}
+
+.LinkRobinsWiki-row-deletedBadge {
+    display: inline-block;
+    margin-left: 8px;
+    padding: 1px 7px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    text-decoration: none;
+    vertical-align: middle;
+    color: var(--alert-error-color, #b71c1c);
+    background: fade(#b71c1c, 12%);
+    border-radius: 3px;
+}
+
+.LinkRobinsWiki-row-main {
+    flex: 1;
+    min-width: 0;
+}
+
+.LinkRobinsWiki-row-subject {
+    font-weight: 600;
+    margin-bottom: 4px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.LinkRobinsWiki-row-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    font-size: 0.8rem;
+    color: var(--muted-color, #888);
+}
+
+.LinkRobinsWiki-row-cat {
+    font-weight: 600;
+}
+
+.LinkRobinsWiki-row-user {}
+
+.LinkRobinsWiki-row-date {}
+
+.LinkRobinsWiki-row-status {
+    flex-shrink: 0;
+}
+
+// --- Empty state ----------------------------------------------------
+
+.LinkRobinsWiki-empty {
+    padding: 32px 24px;
+    text-align: center;
+    color: var(--muted-color, #888);
+    background: var(--control-bg, rgba(0,0,0,0.02));
+    border-radius: 8px;
+    line-height: 1.5;
+
+    &.LinkRobinsWiki-empty--blocked {
+        color: #c0392b;
+        background: rgba(192, 57, 43, 0.06);
+    }
+}
+
+// --- Compose form ---------------------------------------------------
+
+.LinkRobinsWiki-form {
+    background: var(--body-bg, transparent);
+
+    .Form-group {
+        margin-bottom: 20px;
+    }
+
+    label {
+        display: block;
+        font-weight: 600;
+        margin-bottom: 6px;
+    }
+}
+
+.LinkRobinsWiki-body {
+    font-family: inherit;
+    font-size: 0.95rem;
+    line-height: 1.5;
+    width: 100%;
+    resize: vertical;
+}
+
+.LinkRobinsWiki-form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+}
+
+// --- Ticket view ----------------------------------------------------
+
+.LinkRobinsWiki-ticket-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+    margin-bottom: 32px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--control-bg, rgba(0,0,0,0.08));
+}
+
+.LinkRobinsWiki-ticket-titleRow {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+
+    .LinkRobinsWiki-title {
+        flex: 1;
+        font-size: 1.5rem;
+        margin: 0;
+    }
+}
+
+
+.LinkRobinsWiki-ticket-actions {
+    display: inline-flex;
+}
+
+.LinkRobinsWiki-container--deleted {
+    .LinkRobinsWiki-header,
+    .LinkRobinsWiki-replies,
+    .LinkRobinsWiki-staffBar {
+        opacity: 0.7;
+    }
+    .LinkRobinsWiki-ticket-actions {
+        opacity: 1;
+    }
+}
+
+.LinkRobinsWiki-ticket-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    font-size: 0.85rem;
+    color: var(--muted-color, #888);
+}
+
+.LinkRobinsWiki-decision {
+    font-size: 0.9rem;
+    margin-top: 4px;
+
+    .LinkRobinsWiki-decision-pending {
+        color: #f39c12;
+        font-weight: 600;
+        text-transform: capitalize;
+    }
+    .LinkRobinsWiki-decision-accepted {
+        color: #27ae60;
+        font-weight: 600;
+        text-transform: capitalize;
+    }
+    .LinkRobinsWiki-decision-rejected {
+        color: #c0392b;
+        font-weight: 600;
+        text-transform: capitalize;
+    }
+}
+
+// --- Staff controls bar ---------------------------------------------
+
+.LinkRobinsWiki-staffBar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 24px;
+    padding: 12px 16px;
+    background: var(--control-bg, rgba(0,0,0,0.03));
+    border-radius: 8px;
+}
+
+.LinkRobinsWiki-staffBar-label {
+    font-weight: 600;
+    font-size: 0.85rem;
+    color: var(--muted-color, #888);
+}
+
+
+.LinkRobinsWiki-staffBar-statusGroup {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0;
+}
+
+.LinkRobinsWiki-staffBar-statusSelect {
+    width: auto;
+    font-size: 0.9rem;
+    font-weight: 600;
+    padding: 6px 28px 6px 12px;
+    border-radius: 4px;
+    border: 1px solid var(--control-bg, rgba(0,0,0,0.15));
+    background-color: var(--body-bg, #fff);
+    color: var(--text-color, inherit);
+    cursor: pointer;
+    transition: border-color 0.12s, box-shadow 0.12s, background-color 0.12s;
+
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'><path d='M1 1l4 4 4-4' stroke='%23888' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+
+    &:hover:not(:disabled) {
+        border-color: var(--primary-color, #07adcc);
+        background-color: var(--control-bg, rgba(0,0,0,0.02));
+    }
+    &:focus {
+        outline: none;
+        border-color: var(--primary-color, #07adcc);
+        box-shadow: 0 0 0 2px fade(#07adcc, 25%);
+    }
+    &:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+}
+
+.LinkRobinsWiki-staffBar-statusGroup .LinkRobinsWiki-staffBar-label {
+    font-weight: 600;
+}
+
+.LinkRobinsWiki-staffBar-assign {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    padding-left: 12px;
+    margin-left: auto;
+    border-left: 1px solid rgba(127,127,127,0.18);
+}
+
+.LinkRobinsWiki-staffBtn {
+    font-size: 0.8rem !important;
+    padding: 5px 12px !important;
+}
+
+@media (max-width: 767px) {
+    // Shrink the ticket title on narrow screens so a normal subject doesn't
+    // wrap onto two lines next to the status badge / actions.
+    .LinkRobinsWiki-title {
+        font-size: 1.2rem;
+    }
+    .LinkRobinsWiki-ticket-titleRow .LinkRobinsWiki-title {
+        font-size: 1.2rem;
+    }
+    .LinkRobinsWiki-staffBar {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    .LinkRobinsWiki-staffBar-statusGroup {
+        width: 100%;
+        justify-content: space-between;
+    }
+    .LinkRobinsWiki-staffBar-statusSelect {
+        flex: 1;
+        min-width: 0;
+    }
+    .LinkRobinsWiki-staffBar-assign {
+        padding-left: 0;
+        margin-left: 0;
+        border-left: none;
+        padding-top: 8px;
+        border-top: 1px solid rgba(127,127,127,0.18);
+        width: 100%;
+    }
+}
+
+// --- Replies --------------------------------------------------------
+
+.LinkRobinsWiki-replies {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    margin-bottom: 24px;
+}
+
+.LinkRobinsWiki-reply {
+    background: var(--body-bg, transparent);
+    border: 1px solid var(--control-bg, rgba(0,0,0,0.08));
+    border-radius: 8px;
+    padding: 14px 18px;
+
+    &.is-internal {
+        background: rgba(243, 156, 18, 0.05);
+        border-color: rgba(243, 156, 18, 0.3);
+        border-left: 4px solid #f39c12;
+    }
+
+    &.is-deleted {
+        opacity: 0.6;
+        background: var(--control-bg, rgba(0,0,0,0.02));
+        border-style: dashed;
+    }
+}
+
+.LinkRobinsWiki-reply-body--deleted {
+    font-style: italic;
+    color: var(--muted-color, #888);
+}
+
+.LinkRobinsWiki-reply-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 8px;
+    font-size: 0.85rem;
+    color: var(--muted-color, #888);
+    flex-wrap: wrap;
+}
+
+.LinkRobinsWiki-reply-author {
+    font-weight: 600;
+    color: var(--text-color, inherit);
+}
+
+.LinkRobinsWiki-reply-date {}
+
+.LinkRobinsWiki-reply-body {
+    line-height: 1.6;
+    word-wrap: break-word;
+
+    > *:first-child { margin-top: 0; }
+    > *:last-child  { margin-bottom: 0; }
+}
+
+.LinkRobinsWiki-reply-edited {
+    font-size: 0.75rem;
+    color: var(--muted-color, #888);
+    font-style: italic;
+    cursor: help;
+}
+
+.LinkRobinsWiki-reply-deletedBadge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 10px;
+    background: rgba(220, 53, 69, 0.15);
+    color: #c0392b;
+    border-radius: 999px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+
+    i { font-size: 0.85em; }
+}
+
+.LinkRobinsWiki-reply-actions {
+    margin-left: auto;
+}
+
+.LinkRobinsWiki-reply-actionsToggle {
+    width: 28px !important;
+    padding: 4px 0 !important;
+    font-size: 14px !important;
+    color: var(--muted-color, #888);
+
+    &:hover, &:focus {
+        color: var(--text-color, inherit);
+    }
+}
+
+.LinkRobinsWiki-reply-action--danger {
+    &, &:hover, &:focus {
+        color: #c0392b !important;
+    }
+    &:hover:not(:disabled) {
+        background: rgba(220, 53, 69, 0.06) !important;
+    }
+}
+
+.LinkRobinsWiki-reply-editor {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.LinkRobinsWiki-reply-editor-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+}
+
+// --- Reply form -----------------------------------------------------
+
+.LinkRobinsWiki-replyForm {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.LinkRobinsWiki-replyForm-actions {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.LinkRobinsWiki-internalToggle {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.85rem;
+    color: var(--muted-color, #888);
+    cursor: pointer;
+    user-select: none;
+    margin-right: auto;
+    margin-bottom: 0;
+}
+
+// --- File attachments -----------------------------------------------
+
+.LinkRobinsWiki-attachBtnWrap {
+    display: inline-flex;
+    align-items: stretch;
+}
+
+.LinkRobinsWiki-attachBtn {
+    font-weight: normal;
+}
+
+.LinkRobinsWiki-uploadStatus {
+    margin-top: 8px;
+    padding: 8px 12px;
+    border-radius: 6px;
+    background: var(--control-bg, rgba(0,0,0,0.04));
+    font-size: 0.85rem;
+    color: var(--muted-color, #888);
+}
+
+.LinkRobinsWiki-uploadAlert {
+    margin-top: 8px;
+}
+
+// --- Category picker (new-ticket step 1) -----------------------------
+
+.LinkRobinsWiki-header--picker {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 4px;
+}
+
+.LinkRobinsWiki-pickerHint {
+    margin: 0;
+    color: var(--muted-color, #888);
+}
+
+.LinkRobinsWiki-categoryCards {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 12px;
+}
+
+.LinkRobinsWiki-categoryCards-item {
+    margin: 0;
+}
+
+.LinkRobinsWiki-categoryCard {
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+    width: 100%;
+    text-align: left;
+    padding: 16px 18px;
+    border: 1px solid var(--control-bg, rgba(0, 0, 0, 0.1));
+    border-radius: 8px;
+    background: var(--body-bg, #fff);
+    cursor: pointer;
+    transition: border-color 0.15s, box-shadow 0.15s, transform 0.05s;
+
+    &:hover,
+    &:focus {
+        border-color: var(--primary-color, #07adcc);
+        box-shadow: 0 2px 8px var(--shadow-color, rgba(0, 0, 0, 0.1));
+        outline: none;
+    }
+
+    &:active {
+        transform: translateY(1px);
+    }
+}
+
+.LinkRobinsWiki-categoryCard-icon {
+    flex: 0 0 auto;
+    font-size: 1.5rem;
+    line-height: 1.4;
+    color: var(--primary-color, #07adcc);
+    width: 32px;
+    text-align: center;
+}
+
+.LinkRobinsWiki-categoryCard-text {
+    flex: 1;
+    min-width: 0;
+}
+
+.LinkRobinsWiki-categoryCard-name {
+    display: block;
+    font-weight: 700;
+    font-size: 1.05rem;
+    color: var(--heading-color, var(--body-color));
+}
+
+.LinkRobinsWiki-categoryCard-desc {
+    display: block;
+    margin-top: 4px;
+    color: var(--muted-color, #888);
+    font-size: 0.9rem;
+    line-height: 1.4;
+}
+
+// --- Selected-category chip (new-ticket step 2) ----------------------
+
+.LinkRobinsWiki-backBtn {
+    padding-left: 0;
+    align-self: center;
+}
+
+.LinkRobinsWiki-chosenCategory {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 12px;
+    border-radius: 999px;
+    background: var(--control-bg, rgba(0, 0, 0, 0.05));
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.LinkRobinsWiki-chosenCategory-icon {
+    color: var(--primary-color, #07adcc);
+}

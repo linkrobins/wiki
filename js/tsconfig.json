@@ -1,0 +1,7 @@
+{
+  "extends": "flarum-tsconfig",
+  "include": ["src/**/*"],
+  "compilerOptions": {
+    "baseUrl": "."
+  }
+}
