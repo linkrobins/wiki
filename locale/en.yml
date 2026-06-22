@@ -52,7 +52,6 @@ linkrobins-wiki:
     index:
       new_article: 'New article'
       new_article_tooltip: 'Write a new article'
-      all_articles: 'All articles'
       empty_own: 'No articles yet. Click "New article" to write one.'
       empty: 'No articles to show.'
       untitled: 'Untitled'

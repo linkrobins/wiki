@@ -89,7 +89,7 @@ export default class WikiComposePage extends Page {
         className: 'IndexPage LinkRobinsWiki-page LinkRobinsWiki-page--compose',
         sidebar: () => {
           try {
-            return m(WikiIndexSidebar, { className: 'LinkRobinsWiki-sidebar' });
+            return m(WikiIndexSidebar, { className: 'LinkRobinsWiki-sidebar', activeCategory: this.categoryId || null });
           } catch (e) {
             return null;
           }

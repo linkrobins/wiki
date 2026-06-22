@@ -87,23 +87,14 @@ export default class WikiIndexSidebar extends IndexSidebar {
       });
     } catch (e) {}
 
-    const active = m.route.param('category');
+    // The active category comes from the page (e.g. the article's category on
+    // an article page), falling back to the ?category= filter on the index.
+    const active =
+      this.attrs && this.attrs.activeCategory != null && this.attrs.activeCategory !== ''
+        ? this.attrs.activeCategory
+        : m.route.param('category');
 
     items.add('linkrobinsWikiSeparator', m(Separator), -10);
-
-    items.add(
-      'wiki-all',
-      m(
-        LinkButton,
-        {
-          href: basePath() + BASE_PATH,
-          icon: 'fas fa-book',
-          active: !active,
-        },
-        tr('index.all_articles', 'All articles')
-      ),
-      -11
-    );
 
     this.categories.forEach((cat: any, i: number) => {
       items.add(

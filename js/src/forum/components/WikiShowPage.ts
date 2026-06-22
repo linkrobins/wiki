@@ -64,7 +64,8 @@ export default class WikiShowPage extends Page {
         className: 'IndexPage LinkRobinsWiki-page LinkRobinsWiki-page--show',
         sidebar: () => {
           try {
-            return m(WikiIndexSidebar, { className: 'LinkRobinsWiki-sidebar' });
+            const cat = this.article && this.article.category && this.article.category();
+            return m(WikiIndexSidebar, { className: 'LinkRobinsWiki-sidebar', activeCategory: cat ? cat.id() : null });
           } catch (e) {
             return null;
           }
