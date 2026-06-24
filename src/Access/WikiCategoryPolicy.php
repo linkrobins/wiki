@@ -12,14 +12,4 @@ class WikiCategoryPolicy extends AbstractPolicy
     {
         return true;
     }
-
-    public function edit(User $actor, WikiCategory $category): bool
-    {
-        return $actor->isAdmin();
-    }
-
-    public function delete(User $actor, WikiCategory $category): bool
-    {
-        return $actor->isAdmin();
-    }
 }
