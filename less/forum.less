@@ -12,7 +12,10 @@
 }
 
 .LinkRobinsWiki-title {
-    font-size: 1.5rem;
+    // Scale with linkrobins/font-sizer's reading control. The var falls back to
+    // 1 (no change) when font-sizer isn't installed, and multiplies the
+    // element's own size, so headings grow correctly instead of collapsing.
+    font-size: calc(1.5rem * var(--lr-text-scale, 1));
     font-weight: 700;
     margin: 0;
     display: flex;
@@ -93,6 +96,7 @@
 
 .LinkRobinsWiki-row-subject {
     font-weight: 600;
+    font-size: calc(1em * var(--lr-text-scale, 1));
     margin-bottom: 4px;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -161,7 +165,7 @@
 }
 
 .LinkRobinsWiki-articleTitle {
-    font-size: 1.8rem;
+    font-size: calc(1.8rem * var(--lr-text-scale, 1));
     font-weight: 700;
     margin: 0 0 8px;
 }
@@ -283,17 +287,20 @@
 }
 
 .LinkRobinsWiki-homeBlock-title {
-    font-size: 1.15rem;
+    font-size: calc(1.15rem * var(--lr-text-scale, 1));
     font-weight: 700;
     margin: 0 0 12px;
 }
 
 .LinkRobinsWiki-prose {
     line-height: 1.6;
+    // `1em` here is a no-op at the default size and scales the prose body text
+    // (paragraphs and other inherited text) when the reading control is raised.
+    font-size: calc(1em * var(--lr-text-scale, 1));
 
-    h1 { font-size: 1.6rem; font-weight: 700; margin: 0 0 8px; }
-    h2 { font-size: 1.25rem; font-weight: 700; margin: 16px 0 8px; }
-    h3 { font-size: 1.05rem; font-weight: 700; margin: 12px 0 6px; }
+    h1 { font-size: calc(1.6rem * var(--lr-text-scale, 1)); font-weight: 700; margin: 0 0 8px; }
+    h2 { font-size: calc(1.25rem * var(--lr-text-scale, 1)); font-weight: 700; margin: 16px 0 8px; }
+    h3 { font-size: calc(1.05rem * var(--lr-text-scale, 1)); font-weight: 700; margin: 12px 0 6px; }
     p  { margin: 0 0 8px; color: var(--text-color, inherit); }
 }
 
@@ -328,13 +335,14 @@
 
 .LinkRobinsWiki-categoryCard-name {
     font-weight: 700;
+    font-size: calc(1em * var(--lr-text-scale, 1));
 }
 
 .LinkRobinsWiki-categoryCard-desc {
     display: block;
     margin-top: 6px;
     color: var(--muted-color, #888);
-    font-size: 0.9rem;
+    font-size: calc(0.9rem * var(--lr-text-scale, 1));
     line-height: 1.4;
 }
 
